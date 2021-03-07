@@ -1,12 +1,12 @@
-;;; parinfer.el --- Simpler Lisp editing
+;;; parinfer.el --- Simpler Lisp editing  -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2016, Shi Tianshu
 
 ;; Author: Shi Tianshu
 ;; Homepage: https://github.com/DogLooksGood/parinfer-mode
 ;; Version: 0.4.10
-;; Package-Requires: ((dash "2.13.0") (cl-lib "0.5"))
-;; Keywords: Parinfer
+;; Package-Requires: ((emacs "24.1") (dash "2.13.0") (cl-lib "0.5"))
+;; Keywords: convenience, parinfer
 
 ;; This file is not part of GNU Emacs.
 
@@ -62,6 +62,8 @@
 (require 'dash)
 (require 'parinferlib)
 (require 'mode-local)
+
+;; for parinfer-diff
 (require 'ediff)
 
 ;; -----------------------------------------------------------------------------
@@ -181,6 +183,7 @@ used to match command.
 ;; Alias
 ;; -----------------------------------------------------------------------------
 
+;; Emacs 24 compatibility
 (eval-when-compile
   (if (fboundp 'save-mark-and-excursion)
       (defalias 'parinfer-save-excursion 'save-mark-and-excursion)
@@ -989,16 +992,17 @@ If there's any change, display a confirm message in minibuffer."
   (call-interactively 'raise-sexp)
   (parinfer--reindent-sexp))
 
- (defun parinfer-region-delete-region ()
-    (interactive)
-    (if (region-active-p)
-        (call-interactively 'delete-region)
-      (call-interactively 'parinfer-backward-delete-char))
-    (deactivate-mark t)
-    (parinfer-run))
+(defun parinfer-region-delete-region ()
+  "Delete region if active, backspace if not (?)."
+  (interactive)
+  (if (region-active-p)
+      (call-interactively 'delete-region)
+    (call-interactively 'parinfer-backward-delete-char))
+  (deactivate-mark t)
+  (parinfer-run))
 
 (defun parinfer-yank ()
-  "Replacement in 'parinfer-mode' for 'yank' command."
+  "`yank', then reindent the buffer."
   (interactive)
   (call-interactively 'yank)
   (parinfer--setq-text-modified t)
@@ -1034,7 +1038,7 @@ invoke parinfer after every semicolon input."
   (parinfer--setq-text-modified t))
 
 (defun parinfer-double-quote ()
-  "Insert a pair of quotes, or a single quote after backslash. "
+  "Insert a pair of quotes, or a single quote after backslash."
   (interactive)
   (if (parinfer--in-string-p)
       (let* ((orig-end (parinfer-save-excursion (parinfer--goto-next-toplevel) (line-number-at-pos)))
