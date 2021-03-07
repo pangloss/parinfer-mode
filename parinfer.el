@@ -1040,16 +1040,15 @@ invoke parinfer after every semicolon input."
 (defun parinfer-double-quote ()
   "Insert a pair of quotes, or a single quote after backslash."
   (interactive)
-  (if (parinfer--in-string-p)
-      (let* ((orig-end (parinfer-save-excursion (parinfer--goto-next-toplevel) (line-number-at-pos)))
-             (orig-end-is-max (eq (line-number-at-pos (point-max)) orig-end)))
-        (insert "\"")
-        (let ((new-end (parinfer-save-excursion (parinfer--goto-next-toplevel) (line-number-at-pos))))
-          (unless (or (< orig-end new-end)
-                      (and orig-end-is-max
-                           (parinfer--unfinished-string-p)))
-            (parinfer--invoke-parinfer))))
-    (call-interactively 'self-insert-command)))
+  (cond (;; insert just one quote after backslash
+         (= (char-before) ?\\)
+         (insert "\""))
+        ;; bonus: insert \" in a string
+        ((parinfer--in-string-p)
+         (insert "\\\""))
+        ;; otherwise insert a pair of quotes
+        (t (insert "\"\"")
+           (forward-char -1))))
 
 (defun parinfer-toggle-mode ()
   "Switch parinfer mode between Indent Mode and Paren Mode."
