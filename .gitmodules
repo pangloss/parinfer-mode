@@ -1,0 +1,3 @@
+[submodule "parinferlib"]
+	path = parinferlib
+	url = https://github.com/kisaragi-hiu/parinfer-elisp.git
