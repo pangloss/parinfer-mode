@@ -1,6 +1,17 @@
-;;; parinferlib.el --- a Parinfer implementation in Emacs Lisp
-;; v1.0.0
-;; https://github.com/oakmac/parinfer-elisp
+;;; parinferlib.el --- A Parinfer implementation in Emacs Lisp
+;;
+;; Author: Chris Oakman
+;; Homepage: https://github.com/oakmac/parinfer-elisp
+;; Version: 1.0.0
+;; Package-Requires: ((emacs "24.1"))
+;; Keywords: parinfer, extensions
+;;
+;;; Commentary:
+;;
+;; Kisaragi Hiu: I'm modifying this in hope of making it more
+;; performant, as well as make it more idiomatic.
+;;
+;;; Original commentary:
 ;;
 ;; More information about Parinfer can be found here:
 ;; http://shaunlebron.github.io/parinfer/
@@ -11,6 +22,8 @@
 
 ;; NOTE: everything is namespaced under `parinferlib` with the assumption that
 ;;       Emacs extensions might use `parinfer`
+
+;;; Code:
 
 ;;------------------------------------------------------------------------------
 ;; Constants / Predicates
@@ -31,10 +44,33 @@
 ;;   1 : indentDelta
 ;;   2 : lineNo
 ;;   3 : x
-(defconst parinferlib--CH_IDX 0)
-(defconst parinferlib--INDENT_DELTA_IDX 1)
-(defconst parinferlib--LINE_NO_IDX 2)
-(defconst parinferlib--X_IDX 3)
+;; A Stack Element has four fields:
+;; - ch
+;; - indent-delta
+;; - line-no
+;; - x
+
+(defsubst parinferlib--stack-elem (ch indent-delta line-no x)
+  "Create a Stack Element.
+A Stack Element has four fields: CH, INDENT-DELTA, LINE-NO, and X."
+  (declare (side-effect-free t))
+  (vector ch indent-delta line-no x))
+(defsubst parinferlib--stack-elem-ch (elem)
+  "Access slot \"ch\" of `parinferlib--stack-elem' struct ELEM."
+  (declare (side-effect-free t))
+  (aref elem 0))
+(defsubst parinferlib--stack-elem-indent-delta (elem)
+  "Access slot \"indent-delta\" of `parinferlib--stack-elem' struct ELEM."
+  (declare (side-effect-free t))
+  (aref elem 1))
+(defsubst parinferlib--stack-elem-line-no (elem)
+  "Access slot \"line-no\" of `parinferlib--stack-elem' struct ELEM."
+  (declare (side-effect-free t))
+  (aref elem 2))
+(defsubst parinferlib--stack-elem-x (elem)
+  "Access slot \"x\" of `parinferlib--stack-elem' struct ELEM."
+  (declare (side-effect-free t))
+  (aref elem 3))
 
 ;; determines if a line only contains a Paren Trail (possibly w/ a comment)
 (defconst parinferlib--STANDALONE_PAREN_TRAIL "^[][:space:])}]*\\(;.*\\)?$")
@@ -47,27 +83,20 @@
 (puthash "(" ")" parinferlib--PARENS)
 (puthash ")" "(" parinferlib--PARENS)
 
-(defun parinferlib--empty? (stack)
-  (zerop (length stack)))
-
-(defun parinferlib--not-empty? (stack)
-  (not (parinferlib--empty? stack)))
-
 (defun parinferlib--open-paren? (ch)
-  (or (string= "(" ch)
-      (string= "{" ch)
-      (string= "[" ch)))
+  "Is CH an open paren?"
+  (member ch '("(" "{" "[")))
 
 (defun parinferlib--close-paren? (ch)
-  (or (string= ")" ch)
-      (string= "}" ch)
-      (string= "]" ch)))
+  "Is CH a close paren?"
+  (member ch '(")" "}" "]")))
 
 ;;------------------------------------------------------------------------------
 ;; Result Structure
 ;;------------------------------------------------------------------------------
 
 (defun parinferlib--create-initial-result (text mode options)
+  "Initialize the result object."
   (let ((lines-vector (vconcat (split-string text parinferlib--LINE_ENDING_REGEX)))
         (result (make-hash-table)))
     (puthash :mode mode result)
@@ -131,16 +160,12 @@
 ;; Errors
 ;;------------------------------------------------------------------------------
 
-(defconst parinferlib--ERR_QUOTE_DANGER "quote-danger")
-(defconst parinferlib--ERR_EOL_BACKSLASH "eol-backslash")
-(defconst parinferlib--ERR_UNCLOSED_QUOTE "unclosed-quote")
-(defconst parinferlib--ERR_UNCLOSED_PAREN "unclosed-paren")
-
-(defconst parinferlib--ERR_MESSAGES (make-hash-table :test 'equal))
-(puthash parinferlib--ERR_QUOTE_DANGER   "Quotes must balanced inside comment blocks." parinferlib--ERR_MESSAGES)
-(puthash parinferlib--ERR_EOL_BACKSLASH  "Line cannot end in a hanging backslash." parinferlib--ERR_MESSAGES)
-(puthash parinferlib--ERR_UNCLOSED_QUOTE "String is missing a closing quote." parinferlib--ERR_MESSAGES)
-(puthash parinferlib--ERR_UNCLOSED_PAREN "Unmatched open-paren." parinferlib--ERR_MESSAGES)
+(defconst parinferlib--err-messages
+  '((quote-danger . "Quotes must balanced inside comment blocks.")
+    (eol-backslash . "Line cannot end in a hanging backslash.")
+    (unclosed-quote . "String is missing a closing quote.")
+    (unclosed-paren . "Unmatched open-paren."))
+  "Alist mapping error symbols to error messages.")
 
 (defun parinferlib--cache-error-pos (result error-name line-no x)
   (let* ((error-cache (gethash :errorPosCache result))
@@ -148,17 +173,23 @@
          (updated-error-cache (plist-put error-cache error-name position)))
     (puthash :errorPosCache updated-error-cache result)))
 
-(defun parinferlib--create-error (result error-name line-no x)
+(defun parinferlib--create-error (result error line-no x)
+  "Create an error object.
+
+RESULT: the current result.
+ERROR: one of the keys in `parinferlib--err-messages'.
+LINE-NO: current line number.
+X: current position."
   (let* ((error-cache (gethash :errorPosCache result))
-         (error-msg (gethash error-name parinferlib--ERR_MESSAGES))
-         (error-position (plist-get error-cache error-name)))
+         (error-msg (cdr (assq error parinferlib--err-messages)))
+         (error-position (plist-get error-cache error)))
     (when (not line-no)
       (setq line-no (plist-get error-position :line-no)))
     (when (not x)
       (setq x (plist-get error-position :x)))
 
     ;; return a plist of the error
-    (list :name error-name
+    (list :name (symbol-name error)
           :message error-msg
           :line-no line-no
           :x x)))
@@ -249,18 +280,18 @@
 ;;------------------------------------------------------------------------------
 
 (defun parinferlib--valid-close-paren? (paren-stack ch)
-  (if (parinferlib--empty? paren-stack)
-    nil
+  (when paren-stack
     (let* ((top-of-stack (car paren-stack))
-           (top-of-stack-ch (aref top-of-stack parinferlib--CH_IDX)))
+           (top-of-stack-ch (parinferlib--stack-elem-ch top-of-stack)))
       (string= top-of-stack-ch (gethash ch parinferlib--PARENS)))))
 
 (defun parinferlib--on-open-paren (result)
   (when (gethash :isInCode result)
-    (let* ((new-stack-el (vector (gethash :ch result)
-                                 (gethash :indentDelta result)
-                                 (gethash :lineNo result)
-                                 (gethash :x result)))
+    (let* ((new-stack-el (parinferlib--stack-elem
+                          (gethash :ch result)
+                          (gethash :indentDelta result)
+                          (gethash :lineNo result)
+                          (gethash :x result)))
            (paren-stack (gethash :parenStack result))
            (new-paren-stack (cons new-stack-el paren-stack)))
       (puthash :parenStack new-paren-stack result))))
@@ -268,7 +299,7 @@
 (defun parinferlib--on-matched-close-paren (result)
   (let* ((paren-stack (gethash :parenStack result))
          (opener (pop paren-stack))
-         (opener-x (aref opener parinferlib--X_IDX))
+         (opener-x (parinferlib--stack-elem-x opener))
          (result-x (gethash :x result))
          (openers (gethash :parenTrailOpeners result))
          (new-openers (cons opener openers)))
@@ -310,13 +341,13 @@
            (when (gethash :quoteDanger result)
              (let ((line-no (gethash :lineNo result))
                    (x (gethash :x result)))
-               (parinferlib--cache-error-pos result parinferlib--ERR_QUOTE_DANGER line-no x)))))
+               (parinferlib--cache-error-pos result 'quote-danger line-no x)))))
 
         (t
          (let ((line-no (gethash :lineNo result))
                (x (gethash :x result)))
            (puthash :isInStr t result)
-           (parinferlib--cache-error-pos result parinferlib--ERR_UNCLOSED_QUOTE line-no x)))))
+           (parinferlib--cache-error-pos result 'unclosed-quote line-no x)))))
 
 (defun parinferlib--on-backslash (result)
   (puthash :isEscaping t result))
@@ -327,7 +358,7 @@
     (when (gethash :isInCode result)
       (let ((line-no (gethash :lineNo result))
             (x (gethash :x result)))
-        (throw 'parinferlib-error (parinferlib--create-error result parinferlib--ERR_EOL_BACKSLASH line-no (1- x)))))
+        (throw 'parinferlib-error (parinferlib--create-error result 'eol-backslash line-no (1- x)))))
     (parinferlib--on-newline result)))
 
 (defun parinferlib--on-char (result)
@@ -444,7 +475,7 @@
     (when (not (equal start-x end-x))
       (let ((openers (gethash :parenTrailOpeners result))
             (paren-stack (gethash :parenStack result)))
-        (while (parinferlib--not-empty? openers)
+        (while openers
           (setq paren-stack (cons (pop openers) paren-stack)))
         (puthash :parenTrailOpeners openers result)
         (puthash :parenStack paren-stack result)))))
@@ -456,8 +487,8 @@
     (while (and (> (length paren-stack) 0)
                 (not break?))
       (let* ((opener (car paren-stack))
-             (opener-x (aref opener parinferlib--X_IDX))
-             (opener-ch (aref opener parinferlib--CH_IDX)))
+             (opener-x (parinferlib--stack-elem-x opener))
+             (opener-ch (parinferlib--stack-elem-ch opener)))
         (if (>= opener-x indent-x)
           (progn (pop paren-stack)
                  (setq parens (concat parens (gethash opener-ch parinferlib--PARENS))))
@@ -496,8 +527,8 @@
 (defun parinferlib--append-paren-trail (result)
   (let* ((paren-stack (gethash :parenStack result))
          (opener (pop paren-stack))
-         (opener-ch (aref opener parinferlib--CH_IDX))
-         (opener-x (aref opener parinferlib--X_IDX))
+         (opener-ch (parinferlib--stack-elem-ch opener))
+         (opener-x (parinferlib--stack-elem-x opener))
          (close-ch (gethash opener-ch parinferlib--PARENS))
          (paren-trail-line-no (gethash :parenTrailLineNo result))
          (end-x (gethash :parenTrailEndX result)))
@@ -543,8 +574,8 @@
          (paren-stack (gethash :parenStack result))
          (opener (car paren-stack)))
     (when opener
-      (let* ((opener-x (aref opener parinferlib--X_IDX))
-             (opener-indent-delta (aref opener parinferlib--INDENT_DELTA_IDX)))
+      (let* ((opener-x (parinferlib--stack-elem-x opener))
+             (opener-indent-delta (parinferlib--stack-elem-indent-delta opener)))
         (setq min-indent (1+ opener-x))
         (setq new-indent (+ new-indent opener-indent-delta))))
     (setq new-indent (parinferlib--clamp new-indent min-indent max-indent))
@@ -570,7 +601,7 @@
 (defun parinferlib--on-indent (result)
   (puthash :trackingIndent nil result)
   (when (gethash :quoteDanger result)
-    (throw 'parinferlib-error (parinferlib--create-error result parinferlib--ERR_QUOTE_DANGER nil nil)))
+    (throw 'parinferlib-error (parinferlib--create-error result 'quote-danger nil nil)))
   (let ((mode (gethash :mode result))
         (x (gethash :x result)))
     (when (equal mode :indent)
@@ -645,9 +676,9 @@
       (let ((current-stops (gethash :tabStops result))
             (new-stops '()))
         (dolist (stackel (gethash :parenStack result))
-          (let ((new-stop (list :ch (aref stackel parinferlib--CH_IDX)
-                                :line-no (aref stackel parinferlib--LINE_NO_IDX)
-                                :x (aref stackel parinferlib--X_IDX))))
+          (let ((new-stop (list :ch (parinferlib--stack-elem-ch stackel)
+                                :line-no (parinferlib--stack-elem-line-no stackel)
+                                :x (parinferlib--stack-elem-x stackel))))
             (setq new-stops (push new-stop new-stops))))
         (puthash :tabStops (append current-stops new-stops) result)))))
 
@@ -692,20 +723,20 @@
 (defun parinferlib--finalize-result (result)
   (when (gethash :quoteDanger result)
     (throw 'parinferlib-error
-           (parinferlib--create-error result parinferlib--ERR_QUOTE_DANGER nil nil)))
+           (parinferlib--create-error result 'quote-danger nil nil)))
   (when (gethash :isInStr result)
     (throw 'parinferlib-error
-           (parinferlib--create-error result parinferlib--ERR_UNCLOSED_QUOTE nil nil)))
+           (parinferlib--create-error result 'unclosed-quote nil nil)))
   (let* ((paren-stack (gethash :parenStack result))
          (mode (gethash :mode result)))
-    (when (parinferlib--not-empty? paren-stack)
+    (when paren-stack
       (when (equal mode :paren)
         (let* ((paren-stack (gethash :parenStack result))
                (opener (car paren-stack))
-               (opener-line-no (aref opener parinferlib--LINE_NO_IDX))
-               (opener-x (aref opener parinferlib--X_IDX)))
+               (opener-line-no (parinferlib--stack-elem-line-no opener))
+               (opener-x (parinferlib--stack-elem-x opener)))
           (throw 'parinferlib-error
-                 (parinferlib--create-error result parinferlib--ERR_UNCLOSED_PAREN opener-line-no opener-x))))
+                 (parinferlib--create-error result 'unclosed-paren opener-line-no opener-x))))
       (when (equal mode :indent)
         (puthash :x 0 result)
         (parinferlib--on-indent result))))
@@ -716,6 +747,8 @@
   (puthash :error err result))
 
 (defun parinferlib--process-text (text mode options)
+  "Process TEXT in MODE with OPTIONS.
+Return the result hash-table."
   (let* ((result (parinferlib--create-initial-result text mode options))
          (orig-lines (gethash :origLines result))
          (lines-length (length orig-lines))
@@ -744,15 +777,15 @@
 (defun parinferlib--public-result (result)
   "Return a plist for the Public API."
   (if (gethash :success result)
-    (let* ((lines (gethash :lines result))
-           (result-text (mapconcat 'identity lines parinferlib--NEWLINE))
-           (cursor-x (gethash :cursorX result))
-           (tab-stops (gethash :tabStops result)))
-      (list :success t
-            :cursor-x cursor-x
-            :text result-text
-            :changed-lines (parinferlib--get-changed-lines result)
-            :tab-stops tab-stops))
+      (let* ((lines (gethash :lines result))
+             (result-text (mapconcat 'identity lines parinferlib--NEWLINE))
+             (cursor-x (gethash :cursorX result))
+             (tab-stops (gethash :tabStops result)))
+        (list :success t
+              :cursor-x cursor-x
+              :text result-text
+              :changed-lines (parinferlib--get-changed-lines result)
+              :tab-stops tab-stops))
     (let ((orig-text (gethash :origText result))
           (public-error (gethash :error result))
           (orig-cursor-x (gethash :origCursorX result)))
@@ -766,15 +799,21 @@
 ;;------------------------------------------------------------------------------
 
 (defun parinferlib-indent-mode (text &optional options)
-  "Indent Mode public function"
+  "Indent Mode public function.
+
+TEXT should be a string to process with Parinfer.
+OPTIONS should be a plist; see README.md for all options."
   (let ((result (parinferlib--process-text text :indent options)))
     (parinferlib--public-result result)))
 
 (defun parinferlib-paren-mode (text &optional options)
-  "Paren Mode public function"
+  "Paren Mode public function.
+
+TEXT should be a string to process with Parinfer.
+OPTIONS should be a plist; see README.md for all options."
   (let ((result (parinferlib--process-text text :paren options)))
     (parinferlib--public-result result)))
 
 (provide 'parinferlib)
 
-;;; parinfer-lib.el ends here
+;;; parinferlib.el ends here
