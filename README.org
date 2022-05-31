@@ -72,15 +72,6 @@ Alternatively, you can use ~parinfer-diff~ command to see how will *Indent Mode*
 
 [[file:images/diff_demo.gif]]
 
-And there are some keybindings in Ediff:
-| Key  | Description                                               |
-|------+-----------------------------------------------------------|
-| ~q~  | Quit diff.                                                |
-| ~b~  | B->A in Ediff, this can apply change to your origin code. |
-| ~ra~ | Restore A in Ediff, this can revert change.               |
-| ~n~  | Move to next difference.                                  |
-| ~p~  | Move to previous difference.                              |
-
 Also, There's a command ~parinfer-auto-fix~ to fix wrong indentation for whole buffer. (Only works with balanced parens)
 
 * Configurations
@@ -126,8 +117,6 @@ The extensions that will be enabled. The list could contain followings:
 | smart-tab     | ~C-f~ & ~C-b~ on empty line will goto next/previous import indentation.               |
 | paredit       | Introduce some paredit commands from paredit-mode.                                    |
 | lispy         | Integration with Lispy.                                                               |
-| evil          | Integration with Evil.                                                                |
-| one           | Experimental on fuzz *Indent Mode* and *Paren Mode*. Not recommanded.                 |
 
 ** parinfer-lighters
 #+BEGIN_SRC emacs-lisp
