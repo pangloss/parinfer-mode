@@ -67,11 +67,13 @@
 
 ;; Internal
 (require 'parinferlib)
+(require 'parinfer-ext)
 (require 'parinfer-strategies)
 
 ;; -----------------------------------------------------------------------------
 ;; Custom variables
 ;; -----------------------------------------------------------------------------
+
 (defvar parinfer-debug nil
   "Enable parinfer debug when set to t.")
 
@@ -87,10 +89,6 @@
 
 The car of it is used in parinfer indent mode, the cdr
 used in parinfer paren mode.")
-
-(defvar parinfer-extensions
-  '(defaults pretty-parens smart-yank)
-  "Parinfer extensions, which will be enabled when run parinfer.")
 
 (defvar parinfer-mode-enable-hook nil
   "Call after parinfer mode is enabled.")
@@ -124,9 +122,6 @@ close-parens after it.")
 ;; -----------------------------------------------------------------------------
 ;; Internal variable and constants
 ;; -----------------------------------------------------------------------------
-
-(defconst parinfer--extension-prefix "parinfer-ext::"
-  "The prefix of parinfer extensions.")
 
 (defvar-local parinfer--mode 'paren
   "Parinfer mode style, 'paren or 'indent.")
@@ -242,50 +237,6 @@ Clean up delay if exists."
     output))
 
 ;;;; Extensions
-
-(defmacro parinfer-define-extension (name doc-str &rest clauses)
-  "Define an extension.
-
-Extensions listed in `parinfer-extensions' are called on
-different triggers (lifecycles).
-
-Usage:
-\(parinfer-define-extension NAME
-  DOC-STR
-  CLAUSES)
-
-CLAUSES are the code for lifecycle.
-:mount    called when 'parinfer-mode' enabled.
-:unmount  called when 'parinfer-mode' disabled.
-:paren    called when 'parinfer-mode' switch to Paren Mode.
-:indent   called when 'parinfer-mode' switch to Indent Mode."
-  (declare (indent 1) (doc-string 2))
-  (let* ((alist (parinfer--plist2alist clauses))
-         (keys (delete-dups (mapcar #'car alist)))
-         (name-str (symbol-name name))
-         clause)
-    `(defun ,(intern (concat parinfer--extension-prefix name-str))
-         (lifecycle)
-       ,doc-str
-       (cond
-        ,@(cl-loop for key in keys
-                   collect `((eq lifecycle ,key)
-                             ,@(cdr (assq key alist))))))))
-
-(defun parinfer--extension-funcall (extension lifecycle)
-  "For specified EXTENSION, call its LIFECYCLE function."
-  (let ((func (intern (concat parinfer--extension-prefix
-                              (symbol-name extension)))))
-    (when parinfer-debug
-      (message "Load extension: %s, available:%s" func
-               (functionp func)))
-    (when (functionp func)
-      (funcall func lifecycle))))
-
-(defun parinfer--extension-lifecycle (lifecycle)
-  "Execute LIFECYCLE function for `parinfer-extensions'."
-  (dolist (extension parinfer-extensions)
-    (parinfer--extension-funcall extension lifecycle)))
 
 (defun parinfer-current-mode ()
   "Return the current `parinfer--mode'."
@@ -587,7 +538,6 @@ This will finish delay processing immediately."
 (defun parinfer-mode-enable ()
   "Enable 'parinfer-mode'."
   (setq-mode-local parinfer-mode indent-tabs-mode nil)
-  (require 'parinfer-ext)
   (setq parinfer--last-line-number (line-number-at-pos (point)))
   (add-hook 'post-command-hook 'parinfer--invoke-parinfer-when-necessary t t)
   (add-hook 'post-command-hook 'parinfer--update-text-modified t t)
