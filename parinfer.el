@@ -412,8 +412,22 @@ Buffer text, we should see a confirm message."
 (defun parinfer--init ()
   "Init Parinfer Mode, switch to Paren firstly, then Indent."
   (parinfer--switch-to-paren-mode)
-  (when (parinfer--indent-no-change?)
-    (parinfer--switch-to-indent-mode-1)))
+  (pcase (parinfer--indent-changes)
+    (`unchanged
+     (parinfer--switch-to-indent-mode-1))
+    (`changed
+     (message
+      (substitute-command-keys
+       (concat "Parinfer: Paren Mode, use \\[parinfer-toggle-mode] "
+               "to switch to Indent Mode."))))
+    (`(error ,err)
+     (message
+      (concat "Parinfer: Error%s: \"%s\" - switch to Paren mode. "
+              "When error fixed, you can switch to indent mode.")
+      (if-let (line-no (plist-get err :line-no))
+          (format " on line %d" line-no)
+        "")
+      (plist-get err :message)))))
 
 (defun parinfer--indent-and-switch-to-indent-mode ()
   "Switch to Indent mode and call Indent Mode immediately."
@@ -841,40 +855,25 @@ Use this to remove tab indentation of your code."
       (forward-char (plist-get result :cursor-x))
       (set-window-start (selected-window) window-start-pos))))
 
-(defun parinfer--indent-no-change? ()
-  "Does switching to indent mode leave the buffer unchanged?
+(defun parinfer--indent-changes ()
+  "Does switching to indent mode change the buffer?
 
-If there's any change, display a warning message and return nil.
-Otherwise return t."
-  (let* ((window-start-pos (window-start))
-         (cursor-line (1- (line-number-at-pos)))
+Return `changed' if so, `unchanged' if not, or `(error <ERR>)' if
+parinferlib returned an error."
+  (let* ((cursor-line (1- (line-number-at-pos)))
          (cursor-x (parinfer--cursor-x))
          (opts (list :cursor-line cursor-line :cursor-x cursor-x))
          (text (buffer-substring-no-properties (point-min) (point-max)))
          (result (parinferlib-indent-mode text opts))
          (success (plist-get result :success))
          (err (plist-get result :error))
-         (error-message (plist-get err :message))
-         (error-line-no (plist-get err :line-no))
          (changed-lines (plist-get result :changed-lines)))
-    (if (not success)
-        (progn
-          (message (concat "Parinfer: Error%s: \"%s\" - switch to Paren mode. "
-                           "When error fixed, you can switch to indent mode.")
-                   (if (null error-line-no)
-                       ""
-                     (format " on line %d" error-line-no))
-                   error-message)
-          nil)
-      (if (and changed-lines
-               (not (string= text (plist-get result :text))))
-          (progn
-            (message
-             (substitute-command-keys
-              (concat "Parinfer: Paren Mode, use \\[parinfer-toggle-mode] "
-                      "to switch to Indent Mode.")))
-            nil)
-        t))))
+    (cond ((not success)
+           (list 'error err))
+          ((and changed-lines
+                (not (string= text (plist-get result :text))))
+           'changed)
+          (t 'unchanged))))
 
 (defun parinfer-indent-with-confirm ()
   "Call parinfer indent on whole buffer.
