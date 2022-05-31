@@ -61,12 +61,12 @@
         (font-lock-fontify-buffer)))))
 
 (defface parinfer-pretty-parens:dim-paren-face
-   '((((class color) (background dark))
-      (:foreground "grey40"))
-     (((class color) (background light))
-      (:foreground "grey60")))
-   "Parinfer dim paren face."
-   :group 'parinfer-ext)
+  '((((class color) (background dark))
+     (:foreground "grey40"))
+    (((class color) (background light))
+     (:foreground "grey60")))
+  "Parinfer dim paren face."
+  :group 'parinfer-ext)
 
 
 (parinfer-define-extension pretty-parens
@@ -177,7 +177,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
 (defun parinfer-lispy:newline ()
   (interactive)
   (parinfer-do
-    (call-interactively 'newline-and-indent)))
+   (call-interactively 'newline-and-indent)))
 
 (defun parinfer-lispy:paren-left-and-between-parens-p ()
   (let ((ca (char-after))
@@ -273,16 +273,16 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
   :mount
   (parinfer-strategy-add 'default
     '(evil-delete-char evil-shift-left evil-shift-right evil-shift-right-line
-      evil-shift-left-line))
+                       evil-shift-left-line))
   (parinfer-strategy-add 'instantly
     '(evil-delete evil-change evil-change-line evil-paste-before evil-paste-after
-      evil-delete-line evil-delete-char evil-delete-backward-char evil-substitute
-      evil-change-whole-line evil-force-normal-state evil-normal-state
-       evil-exit-visual-state))
+                  evil-delete-line evil-delete-char evil-delete-backward-char evil-substitute
+                  evil-change-whole-line evil-force-normal-state evil-normal-state
+                  evil-exit-visual-state))
   (parinfer-strategy-add 'skip
     '(evil-previous-line evil-forward-char evil-backward-char evil-next-line
-      evil-forward-word evil-forward-word-begin evil-backward-word-begin
-      evil-backward-end evil-scroll-page-down evil-scroll-up)))
+                         evil-forward-word evil-forward-word-begin evil-backward-word-begin
+                         evil-backward-end evil-scroll-page-down evil-scroll-up)))
 
 ;; -----------------------------------------------------------------------------
 ;; Smart yank
@@ -327,8 +327,8 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
      (:background "grey40"))
     (((class color) (background light))
      (:background "grey60")))
-   "Parinfer Smart TAB indicator."
-   :group 'parinfer-ext)
+  "Parinfer Smart TAB indicator."
+  :group 'parinfer-ext)
 
 (defun parinfer-smart-tab:clean-not-skip-this-command-p ()
   (and (symbolp this-command)
@@ -378,12 +378,12 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
            (text (buffer-substring-no-properties sexp-begin begin))
            (pos-list nil))
       (progn
-       (with-temp-buffer
-         (insert text)
-         (newline-and-indent)
-         (parinfer-indent-buffer)
-         (funcall m)
-         (setq pos-list (parinfer-smart-tab:find-possible-positions))))
+        (with-temp-buffer
+          (insert text)
+          (newline-and-indent)
+          (parinfer-indent-buffer)
+          (funcall m)
+          (setq pos-list (parinfer-smart-tab:find-possible-positions))))
       (goto-char begin)
       (back-to-indentation)
       (let ((x (- (point) (line-beginning-position))))
@@ -527,7 +527,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
               (let ((next-x (-last-item (-filter (lambda (x) (> x current-x)) pos-list))))
                 (cl-loop for i from 1 to next-x do
                          (insert " ")))))
-         (setq parinfer-smart-tab:indicator-line (line-number-at-pos))))
+          (setq parinfer-smart-tab:indicator-line (line-number-at-pos))))
     (call-interactively 'forward-char)))
 
 (defun parinfer-smart-tab:backward-char ()
