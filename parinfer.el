@@ -674,13 +674,15 @@ CONTEXT is the context for parinfer execution."
       (parinfer--execute-instantly context))))
 
 (defun parinfer--auto-switch-indent-mode-p ()
+  "Should we automatically switch to indent mode?"
   (and (parinfer--paren-balanced-p)
        (not parinfer--first-load)
        (or parinfer-auto-switch-indent-mode
            (and parinfer-auto-switch-indent-mode-when-closing
-                (let ((keys (this-command-keys)))
-                  (and (stringp keys)
-                       (string-match-p "\\s)" keys)))))))
+                (let ((l-c-e last-command-event))
+                  (and (characterp l-c-e)
+                       (string-match-p "\\s)"
+                                       (string l-c-e))))))))
 
 ;; -----------------------------------------------------------------------------
 ;; Parinfer commands
