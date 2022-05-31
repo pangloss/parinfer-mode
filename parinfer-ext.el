@@ -320,8 +320,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
 
 (defconst parinfer-smart-tab:close-paren-regex "\\()\\|]\\|}\\)")
 
-(defvar parinfer-smart-tab:indicator-line nil)
-(make-variable-buffer-local 'parinfer-smart-tab:indicator-line)
+(defvar-local parinfer-smart-tab:indicator-line nil)
 
 (defface parinfer-smart-tab:indicator-face
   '((((class color) (background dark))
@@ -683,7 +682,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
 ;; One
 ;; -----------------------------------------------------------------------------
 
-(defvar parinfer-one:context nil
+(defvar-local parinfer-one:context nil
   "The context for current command.")
 
 (defvar parinfer-one:indent-trigger-keys '("(" ")" "[" "]" "{" "}"))
@@ -701,8 +700,6 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
     (save-excursion
       (back-to-indentation)
       (<= p (point)))))
-
-(make-variable-buffer-local 'parinfer-one:context)
 
 (defun parinfer-one:update-context ()
   (setq parinfer-one:context

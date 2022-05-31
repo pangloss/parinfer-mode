@@ -151,33 +151,26 @@ used to match command.
 (defconst parinfer--extension-prefix "parinfer-ext::"
   "The prefix of parinfer extensions.")
 
-(defvar parinfer--mode 'paren
+(defvar-local parinfer--mode 'paren
   "Parinfer mode style, 'paren or 'indent.")
-(make-variable-buffer-local 'parinfer--mode)
 
-(defvar parinfer--first-load t
-  "NOT MODIFY THIS, If haven't switch to indent mode yet.")
-(make-variable-buffer-local 'parinfer--first-load)
+(defvar-local parinfer--first-load t
+  "If the buffer haven't switch to indent mode yet.")
 
-(defvar parinfer--region-shifted nil
+(defvar-local parinfer--region-shifted nil
   "If shift the region after mark activate.")
-(make-variable-buffer-local 'parinfer--region-shifted)
 
-(defvar parinfer--text-modified nil
+(defvar-local parinfer--text-modified nil
   "If last command modified text.")
-(make-variable-buffer-local 'parinfer--text-modified)
 
-(defvar parinfer--last-line-number -1
+(defvar-local parinfer--last-line-number -1
   "Holds the last line number after invoke-parinfer-when-necessary.")
-(make-variable-buffer-local 'parinfer--last-line-number)
 
-(defvar parinfer--delay-timer nil
+(defvar-local parinfer--delay-timer nil
   "Current delay timer.")
-(make-variable-buffer-local 'parinfer--delay-timer)
 
-(defvar parinfer--x-after-shift nil
+(defvar-local parinfer--x-after-shift nil
   "Where the cursor x should be, after shift region.")
-(make-variable-buffer-local 'parinfer--x-after-shift)
 
 ;; -----------------------------------------------------------------------------
 ;; Macros
