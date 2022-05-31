@@ -263,6 +263,7 @@ CLAUSES are the codes for lifecycle.
                                 name-str
                                 (symbol-name key)))
             ()
+          ,doc-str
           (progn
             ,@(cdr (assq key alist))))
        clause))
