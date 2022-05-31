@@ -411,7 +411,7 @@ Buffer text, we should see a confirm message."
 (defun parinfer--init ()
   "Init Parinfer Mode, switch to Paren firstly, then Indent."
   (parinfer--switch-to-paren-mode)
-  (when (parinfer--indent-with-message)
+  (when (parinfer--indent-no-change?)
     (parinfer--switch-to-indent-mode)))
 
 (defun parinfer--indent-and-switch-to-indent-mode ()
@@ -840,11 +840,11 @@ Use this to remove tab indentation of your code."
       (forward-char (plist-get result :cursor-x))
       (set-window-start (selected-window) window-start-pos))))
 
-(defun parinfer--indent-with-message ()
-  "Call parinfer indent on whole buffer, display message depend on result.
+(defun parinfer--indent-no-change? ()
+  "Does switching to indent mode leave the buffer unchanged?
 
-If there's any change, display a warning message and style in Paren Mode.
-If There's no change, switch to Indent Mode."
+If there's any change, display a warning message and return nil.
+Otherwise return t."
   (let* ((window-start-pos (window-start))
          (cursor-line (1- (line-number-at-pos)))
          (cursor-x (parinfer--cursor-x))
