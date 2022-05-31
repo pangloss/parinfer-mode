@@ -250,16 +250,6 @@ Clean up delay if exists."
     (goto-char (point-max))
     (parinfer--in-string-p)))
 
-(defun parinfer--plist2alist (plist)
-  "Convert a property PLIST to an association list."
-  (let (key output)
-    (dolist (x plist)
-      (if (keywordp x)
-          (progn (setq key x)
-                 (push (list key) output))
-        (push `(,@(assq key output) ,x) output)))
-    output))
-
 ;;;; Extensions
 
 (defun parinfer-current-mode ()

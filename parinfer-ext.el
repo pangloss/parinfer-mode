@@ -42,6 +42,16 @@
 ;; Definition
 ;; -----------------------------------------------------------------------------
 
+(defun parinfer--plist2alist (plist)
+  "Convert a property PLIST to an association list."
+  (let (key output)
+    (dolist (x plist)
+      (if (keywordp x)
+          (progn (setq key x)
+                 (push (list key) output))
+        (push `(,@(assq key output) ,x) output)))
+    output))
+
 (defmacro parinfer-define-extension (name doc-str &rest clauses)
   "Define an extension.
 
