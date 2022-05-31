@@ -406,13 +406,14 @@ Buffer text, we should see a confirm message."
         (parinfer-indent-buffer)
         (parinfer--switch-to-indent-mode-1))
     (when (parinfer-indent-with-confirm)
+      (setq parinfer--first-load nil)
       (parinfer--switch-to-indent-mode-1))))
 
 (defun parinfer--init ()
   "Init Parinfer Mode, switch to Paren firstly, then Indent."
   (parinfer--switch-to-paren-mode)
   (when (parinfer--indent-no-change?)
-    (parinfer--switch-to-indent-mode)))
+    (parinfer--switch-to-indent-mode-1)))
 
 (defun parinfer--indent-and-switch-to-indent-mode ()
   "Switch to Indent mode and call Indent Mode immediately."
@@ -911,7 +912,6 @@ If there's any change, display a confirm message in minibuffer."
                      (parinfer--goto-line (1+ cursor-line))
                      (forward-char (plist-get result :cursor-x))
                      (set-window-start (selected-window) window-start-pos)
-                     (setq parinfer--first-load nil)
                      t)
             nil)
         t))))
