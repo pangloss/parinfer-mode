@@ -118,14 +118,9 @@ close-parens after it.")
 (defvar parinfer-display-error nil
   "If display error when parinfer failed in Indent Mode.")
 
-(defvar parinfer-strategy
-  '((default
-      self-insert-command delete-indentation kill-line comment-line
-      comment-dwim kill-word delete-char newline kill-region comment-or-uncomment-region newline-and-indent)
-    (instantly
-     delete-region newline)
-    (skip))
-
+(defvar parinfer-strategy '((default)
+                            (instantly)
+                            (skip))
   "Parinfer invoke strategy.)
 
 This variable is an association list, user can use `parinfer-strategy-parse'
@@ -263,6 +258,8 @@ Clean up delay if exists."
         (push `(,@(assq key output) ,x) output)))
     output))
 
+;;;; Extensions
+
 (defmacro parinfer-define-extension (name doc-str &rest clauses)
   "Define an extension.
 
@@ -311,6 +308,8 @@ CLAUSES are the code for lifecycle.
   "Return the current `parinfer--mode'."
   parinfer--mode)
 
+;;;; Strategies
+
 (defun parinfer-strategy-parse (strategy-name)
   "Parse strategy, which is named STRATEGY-NAME in `parinfer-strategy'.
 
@@ -342,6 +341,52 @@ string."
     (when (not (memq strategy keys))
       (push (cons strategy new-value) output))
     (setq parinfer-strategy (reverse output))))
+
+(parinfer-strategy-add 'default
+  'comment-dwim
+  'comment-line
+  'comment-or-uncomment-region
+  'delete-char
+  'delete-indentation
+  'kill-line
+  'kill-region
+  'kill-word
+  'newline
+  'newline-and-indent
+  'self-insert-command
+  'evil-delete-char
+  'evil-shift-left
+  'evil-shift-left-line
+  'evil-shift-right
+  'evil-shift-right-line
+  'sp-insert-pair)
+(parinfer-strategy-add 'instantly
+  'delete-region
+  'newline
+  'evil-change
+  'evil-change-line
+  'evil-change-whole-line
+  'evil-delete
+  'evil-delete-backward-char
+  'evil-delete-char
+  'evil-delete-line
+  'evil-exit-visual-state
+  'evil-force-normal-state
+  'evil-normal-state
+  'evil-paste-after
+  'evil-paste-before
+  'evil-substitute)
+(parinfer-strategy-add 'skip
+  'evil-previous-line
+  'evil-forward-char
+  'evil-backward-char
+  'evil-next-line
+  'evil-forward-word
+  'evil-forward-word-begin
+  'evil-backward-word-begin
+  'evil-backward-end
+  'evil-scroll-page-down
+  'evil-scroll-up)
 
 (defun parinfer--strategy-match-p (command strategy-name)
   "Return t if COMMAND's parinfer invoke strategy is STRATEGY-NAME."

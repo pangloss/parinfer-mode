@@ -5,9 +5,9 @@
 
 [[file:images/logo.png]]
 
-* Deprecated 
+* Deprecated
 
-This project is no longer maintained.I have no success for a fast enough implementation in Emacs Lisp. 
+This project is no longer maintained.I have no success for a fast enough implementation in Emacs Lisp.
 
 Fortunately, there's a [[https://github.com/justinbarclay/parinfer-rust-mode][parinfer-rust-mode]]!
 
@@ -50,7 +50,6 @@ Add following code to your ~.emacs~ or ~init.el~.
       (setq parinfer-extensions
             '(defaults       ; should be included.
               pretty-parens  ; different paren styles for different modes.
-              evil           ; If you use Evil.
               lispy          ; If you use Lispy. With this extension, you should install Lispy and do not enable lispy-mode directly.
               paredit        ; Introduce some paredit commands.
               smart-tab      ; C-b & C-f jump positions and smart shift with tab & S-tab.

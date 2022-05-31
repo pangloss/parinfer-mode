@@ -265,45 +265,6 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
   (parinfer-lispy:init))
 
 ;; -----------------------------------------------------------------------------
-;; Evil
-;; -----------------------------------------------------------------------------
-
-(parinfer-define-extension evil
-  "Integration with Evil."
-  :mount
-  (parinfer-strategy-add 'default
-    #'evil-delete-char
-    #'evil-shift-left
-    #'evil-shift-left-line
-    #'evil-shift-right
-    #'evil-shift-right-line)
-  (parinfer-strategy-add 'instantly
-    #'evil-change
-    #'evil-change-line
-    #'evil-change-whole-line
-    #'evil-delete
-    #'evil-delete-backward-char
-    #'evil-delete-char
-    #'evil-delete-line
-    #'evil-exit-visual-state
-    #'evil-force-normal-state
-    #'evil-normal-state
-    #'evil-paste-after
-    #'evil-paste-before
-    #'evil-substitute)
-  (parinfer-strategy-add 'skip
-    #'evil-previous-line
-    #'evil-forward-char
-    #'evil-backward-char
-    #'evil-next-line
-    #'evil-forward-word
-    #'evil-forward-word-begin
-    #'evil-backward-word-begin
-    #'evil-backward-end
-    #'evil-scroll-page-down
-    #'evil-scroll-up))
-
-;; -----------------------------------------------------------------------------
 ;; Smart yank
 ;; -----------------------------------------------------------------------------
 
