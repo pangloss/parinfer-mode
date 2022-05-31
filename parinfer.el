@@ -738,12 +738,11 @@ This will finish delay processing immediately."
 CONTEXT is the context for parinfer execution."
   (let* ((orig (plist-get context :orig))
          (start (plist-get orig :start))
-         (end (plist-get orig :end))
-         (window-start-pos (plist-get orig :window-start-pos))
          (line-number (plist-get orig :line-number))
          (err (plist-get result :error)))
     (if (and parinfer-display-error err)
-        (let ((err-line (+ (line-number-at-pos start) (plist-get err :line-no))))
+        (let ((err-line (+ (line-number-at-pos start)
+                           (plist-get err :line-no))))
           (message "Parinfer error:%s at line: %s column:%s"
                    (plist-get err :message)
                    err-line
@@ -767,14 +766,11 @@ CONTEXT is the context for parinfer execution."
 (defun parinfer--execute-instantly (context)
   "Execute parinfer instantly with context CONTEXT."
   (unless (parinfer--unsafe-p)
-    (let* ((orig (plist-get context :orig))
-           (start (plist-get orig :start))
-           (end (plist-get orig :end)))
-      (let* ((text (plist-get context :text))
-             (opts (plist-get context :opts))
-             (result (parinferlib-indent-mode text opts)))
-        (parinfer--apply-result result context)
-        (run-hooks 'parinfer-after-execute-hook)))))
+    (let* ((text (plist-get context :text))
+           (opts (plist-get context :opts))
+           (result (parinferlib-indent-mode text opts)))
+      (parinfer--apply-result result context)
+      (run-hooks 'parinfer-after-execute-hook))))
 
 (defun parinfer--execute (context)
   "Execute parinfer with context CONTEXT."
