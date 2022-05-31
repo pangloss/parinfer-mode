@@ -220,17 +220,6 @@ Clean up delay if exists."
        (message "parinfer: set parinfer--text-modified to %S."
                 parinfer--text-modified))))
 
-(defmacro parinfer--switch-to (mode &rest body)
-  "Macro which used to switch indent/paren MODE, after execute BODY."
-  (declare (indent 1))
-  (let ((m (make-symbol "mode")))
-    `(let ((,m ,mode))
-       ,@body
-       (cl-case ,m
-         (indent (parinfer--extension-lifecycle :indent))
-         (paren (parinfer--extension-lifecycle :paren)))
-       (force-mode-line-update))))
-
 (defmacro parinfer-define-extension (name doc-str &rest clauses)
   "Define an extension.
 
@@ -387,10 +376,11 @@ COMMANDS can be:
 
 (defun parinfer--switch-to-indent-mode-1 ()
   "Switch to indent mode auxiliary function."
-  (parinfer--switch-to 'indent
-    (setq parinfer--mode 'indent)
-    (setq parinfer--first-load nil)
-    (run-hook-with-args 'parinfer-switch-mode-hook 'indent)))
+  (setq parinfer--mode 'indent)
+  (setq parinfer--first-load nil)
+  (run-hook-with-args 'parinfer-switch-mode-hook 'indent)
+  (parinfer--extension-lifecycle :indent)
+  (force-mode-line-update))
 
 (defun parinfer--switch-to-indent-mode ()
   "Switch to Indent Mode, this will apply indent fix on whole buffer.
@@ -433,11 +423,12 @@ Buffer text, we should see a confirm message."
 
 (defun parinfer--switch-to-paren-mode ()
   "Switch to paren mode."
-  (parinfer--switch-to 'paren
-    (when parinfer--delay-timer
-      (parinfer--clean-up))
-    (setq parinfer--mode 'paren)
-    (run-hook-with-args 'parinfer-switch-mode-hook 'paren)))
+  (when parinfer--delay-timer
+    (parinfer--clean-up))
+  (setq parinfer--mode 'paren)
+  (run-hook-with-args 'parinfer-switch-mode-hook 'paren)
+  (parinfer--extension-lifecycle :paren)
+  (force-mode-line-update))
 
 (defun parinfer--in-comment-or-string-p ()
   "Return if we are in comment or string."
