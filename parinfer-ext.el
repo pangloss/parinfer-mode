@@ -140,7 +140,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
 
   :mount
   (parinfer-strategy-add 'default
-    '("paredit-"))
+    "paredit-")
   (parinfer-paredit:init))
 
 ;; -----------------------------------------------------------------------------
@@ -256,12 +256,12 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
   (require 'eldoc)
   (eldoc-add-command-completions "lispy-" "parinfer-")
   (parinfer-strategy-add 'default
-    '(parinfer-lispy:parens
-      parinfer-lispy:braces
-      parinfer-lispy:brackets
-      parinfer-lispy:space))
+    #'parinfer-lispy:parens
+    #'parinfer-lispy:braces
+    #'parinfer-lispy:brackets
+    #'parinfer-lispy:space)
   (parinfer-strategy-add 'instantly
-    '(newline))
+    #'newline)
   (parinfer-lispy:init))
 
 ;; -----------------------------------------------------------------------------
@@ -272,17 +272,36 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
   "Integration with Evil."
   :mount
   (parinfer-strategy-add 'default
-    '(evil-delete-char evil-shift-left evil-shift-right evil-shift-right-line
-                       evil-shift-left-line))
+    #'evil-delete-char
+    #'evil-shift-left
+    #'evil-shift-left-line
+    #'evil-shift-right
+    #'evil-shift-right-line)
   (parinfer-strategy-add 'instantly
-    '(evil-delete evil-change evil-change-line evil-paste-before evil-paste-after
-                  evil-delete-line evil-delete-char evil-delete-backward-char evil-substitute
-                  evil-change-whole-line evil-force-normal-state evil-normal-state
-                  evil-exit-visual-state))
+    #'evil-change
+    #'evil-change-line
+    #'evil-change-whole-line
+    #'evil-delete
+    #'evil-delete-backward-char
+    #'evil-delete-char
+    #'evil-delete-line
+    #'evil-exit-visual-state
+    #'evil-force-normal-state
+    #'evil-normal-state
+    #'evil-paste-after
+    #'evil-paste-before
+    #'evil-substitute)
   (parinfer-strategy-add 'skip
-    '(evil-previous-line evil-forward-char evil-backward-char evil-next-line
-                         evil-forward-word evil-forward-word-begin evil-backward-word-begin
-                         evil-backward-end evil-scroll-page-down evil-scroll-up)))
+    #'evil-previous-line
+    #'evil-forward-char
+    #'evil-backward-char
+    #'evil-next-line
+    #'evil-forward-word
+    #'evil-forward-word-begin
+    #'evil-backward-word-begin
+    #'evil-backward-end
+    #'evil-scroll-page-down
+    #'evil-scroll-up))
 
 ;; -----------------------------------------------------------------------------
 ;; Smart yank

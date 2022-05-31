@@ -327,21 +327,13 @@ Its output is a plist that looks like
     (list :commands (cl-remove-if-not #'symbolp list)
           :regexps  (cl-remove-if-not #'stringp list))))
 
-(defun parinfer-strategy-add (strategy commands)
-  "Append new commands to STRATEGY.
-The results will save to `parinfer-strategy'.
+(defun parinfer-strategy-add (strategy &rest commands)
+  "Append new commands to STRATEGY in `parinfer-strategy'.
 
-COMMANDS can be:
-
-1. A command (symbol)
-2. A commands list (symbol list)
-3. A regexp which is used to match commands
-4. A list of regexps which are used to match commands"
+COMMANDS is a list of commands, which may be a symbol or a regexp
+string."
   (declare (indent 1))
-  (let* ((commands (if (listp commands)
-                       commands
-                     (list commands)))
-         (orig-value (cdr (assq strategy parinfer-strategy)))
+  (let* ((orig-value (cdr (assq strategy parinfer-strategy)))
          (keys (mapcar #'car parinfer-strategy))
          (new-value (cl-remove-duplicates
                      (append orig-value commands)
