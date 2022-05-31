@@ -1110,7 +1110,9 @@ Use this to browse and apply the changes."
 ;;;###autoload
 (define-minor-mode parinfer-mode
   "Parinfer mode."
-  nil (:eval (parinfer--lighter)) parinfer-mode-map
+  :init-value nil
+  :lighter (:eval (parinfer--lighter))
+  :keymap parinfer-mode-map
   (if parinfer-mode
       (parinfer-mode-enable)
     (parinfer-mode-disable)))
