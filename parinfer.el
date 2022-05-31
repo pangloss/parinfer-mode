@@ -220,39 +220,6 @@ Clean up delay if exists."
        (message "parinfer: set parinfer--text-modified to %S."
                 parinfer--text-modified))))
 
-(defmacro parinfer-define-extension (name doc-str &rest clauses)
-  "Define an extension.
-
-Extensions listed in `parinfer-extensions' are called on
-different triggers (lifecycles).
-
-Usage:
-\(parinfer-define-extension NAME
-  DOC-STR
-  CLAUSES)
-
-CLAUSES are the code for lifecycle.
-:mount    called when 'parinfer-mode' enabled.
-:unmount  called when 'parinfer-mode' disabled.
-:paren    called when 'parinfer-mode' switch to Paren Mode.
-:indent   called when 'parinfer-mode' switch to Indent Mode."
-  (declare (indent 1) (doc-string 2))
-  (let* ((alist (parinfer--plist2alist clauses))
-         (keys (delete-dups (mapcar #'car alist)))
-         (name-str (symbol-name name))
-         clause)
-    (dolist (key keys)
-      (push
-       `(defun ,(intern (concat parinfer--extension-prefix
-                                name-str
-                                (symbol-name key)))
-            ()
-          ,doc-str
-          (progn
-            ,@(cdr (assq key alist))))
-       clause))
-    `(progn ,@clause)))
-
 
 ;; -----------------------------------------------------------------------------
 ;; Helpers
@@ -296,16 +263,44 @@ CLAUSES are the code for lifecycle.
         (push `(,@(assq key output) ,x) output)))
     output))
 
+(defmacro parinfer-define-extension (name doc-str &rest clauses)
+  "Define an extension.
+
+Extensions listed in `parinfer-extensions' are called on
+different triggers (lifecycles).
+
+Usage:
+\(parinfer-define-extension NAME
+  DOC-STR
+  CLAUSES)
+
+CLAUSES are the code for lifecycle.
+:mount    called when 'parinfer-mode' enabled.
+:unmount  called when 'parinfer-mode' disabled.
+:paren    called when 'parinfer-mode' switch to Paren Mode.
+:indent   called when 'parinfer-mode' switch to Indent Mode."
+  (declare (indent 1) (doc-string 2))
+  (let* ((alist (parinfer--plist2alist clauses))
+         (keys (delete-dups (mapcar #'car alist)))
+         (name-str (symbol-name name))
+         clause)
+    `(defun ,(intern (concat parinfer--extension-prefix name-str))
+         (lifecycle)
+       ,doc-str
+       (cond
+        ,@(cl-loop for key in keys
+                   collect `((eq lifecycle ,key)
+                             ,@(cdr (assq key alist))))))))
+
 (defun parinfer--extension-funcall (extension lifecycle)
   "For specified EXTENSION, call its LIFECYCLE function."
   (let ((func (intern (concat parinfer--extension-prefix
-                              (symbol-name extension)
-                              (symbol-name lifecycle)))))
+                              (symbol-name extension)))))
     (when parinfer-debug
       (message "Load extension: %s, available:%s" func
                (functionp func)))
     (when (functionp func)
-      (funcall func))))
+      (funcall func lifecycle))))
 
 (defun parinfer--extension-lifecycle (lifecycle)
   "Execute LIFECYCLE function for `parinfer-extensions'."
