@@ -49,7 +49,7 @@ Add following code to your ~.emacs~ or ~init.el~.
             '(defaults       ; should be included.
               pretty-parens  ; different paren styles for different modes.
               lispy          ; If you use Lispy. With this extension, you should install Lispy and do not enable lispy-mode directly.
-              paredit        ; Introduce some paredit commands.
+              paredit        ; Bindings for Paredit commands
               smart-tab      ; C-b & C-f jump positions and smart shift with tab & S-tab.
               smart-yank))   ; Yank behavior depend on mode.
       (add-hook 'clojure-mode-hook #'parinfer-mode)

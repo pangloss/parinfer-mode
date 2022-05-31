@@ -60,6 +60,7 @@ string."
     (setq parinfer-strategies (reverse output))))
 
 (parinfer-strategy-add 'default
+  "paredit-"
   'comment-dwim
   'comment-line
   'comment-or-uncomment-region
