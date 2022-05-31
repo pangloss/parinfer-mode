@@ -133,10 +133,9 @@ to parse it and use `parinfer-strategy-add' to set it.
 
 Its elements is like below:
 
- (STRATEGY-NAME COMMAND COMMAND1 ...  CMDS-REGEXP CMDS-REGEXP1 ...)
+ (STRATEGY-NAME COMMAND COMMAND ...)
 
-The COMMAND is a symbol and CMDS-REGEXP is a regexp string which
-used to match command.
+Each COMMAND is a symbol or a regexp string used to match commands.
 
  strategy name    Description
  --------------   -------------------------------------------
@@ -177,7 +176,7 @@ used to match command.
 ;; -----------------------------------------------------------------------------
 
 (defmacro parinfer-silent (&rest body)
-  "Local set function `message' to `format', then execute BODY."
+  "Run BODY with `message' silenced."
   `(cl-letf (((symbol-function 'message) #'format))
      ,@body))
 
@@ -235,12 +234,15 @@ Clean up delay if exists."
 (defmacro parinfer-define-extension (name doc-str &rest clauses)
   "Define an extension.
 
+Extensions listed in `parinfer-extensions' are called on
+different triggers (lifecycles).
+
 Usage:
 \(parinfer-define-extension NAME
   DOC-STR
   CLAUSES)
 
-CLAUSES are the codes for lifecycle.
+CLAUSES are the code for lifecycle.
 :mount    called when 'parinfer-mode' enabled.
 :unmount  called when 'parinfer-mode' disabled.
 :paren    called when 'parinfer-mode' switch to Paren Mode.
@@ -328,10 +330,10 @@ CLAUSES are the codes for lifecycle.
 (defun parinfer-strategy-parse (strategy-name)
   "Parse strategy, which is named STRATEGY-NAME in `parinfer-strategy'.
 
-Its output is a plist, which context is *similar* the below:
+Its output is a plist that looks like
 
- :commands cmd1 cmd2 cmd3
- :regexps regexp1 regexp2 regexp3"
+ (:commands cmd1 cmd2 cmd3
+  :regexps regexp1 regexp2 regexp3)"
   (let ((list (cdr (assq strategy-name parinfer-strategy))))
     (list :commands (cl-remove-if-not #'symbolp list)
           :regexps  (cl-remove-if-not #'stringp list))))
