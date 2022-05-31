@@ -31,11 +31,6 @@
 
 (require 'parinfer-strategies)
 
-(defgroup parinfer-ext
-  nil
-  "Parinfer customize group."
-  :group 'faces)
-
 (defvar parinfer-extensions
   '(defaults pretty-parens smart-yank)
   "Parinfer extensions, which will be enabled when run parinfer.")
@@ -121,7 +116,7 @@ CLAUSES are the code for lifecycle.
     (((class color) (background light))
      (:foreground "grey60")))
   "Parinfer dim paren face."
-  :group 'parinfer-ext)
+  :group 'parinfer-faces)
 
 
 (parinfer-define-extension pretty-parens
@@ -363,7 +358,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
     (((class color) (background light))
      (:background "grey60")))
   "Parinfer Smart TAB indicator."
-  :group 'parinfer-ext)
+  :group 'parinfer-faces)
 
 (defun parinfer-smart-tab:clean-not-skip-this-command-p ()
   (and (symbolp this-command)

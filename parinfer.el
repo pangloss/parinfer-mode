@@ -74,21 +74,59 @@
 ;; Custom variables
 ;; -----------------------------------------------------------------------------
 
+(defgroup parinfer nil
+  "Parinfer."
+  :group 'lisp)
+
+(defgroup parinfer-faces nil
+  "Parinfer faces."
+  :group 'faces)
+
 (defvar parinfer-debug nil
   "Enable parinfer debug when set to t.")
 
-(defvar parinfer-auto-switch-indent-mode nil
-  "Auto switch back to Indent Mode after insert ).")
+(defcustom parinfer-auto-switch-indent-mode nil
+  "Switch back to indent mode automatically if parens are balanced."
+  :group 'parinfer
+  :type 'boolean)
 
-(defvar parinfer-auto-switch-indent-mode-when-closing nil
-  "Auto switch back to Indent Mode when paren matches after we insert a close parens.")
+(defcustom parinfer-auto-switch-indent-mode-when-closing nil
+  "Switch back to indent mode after inserting a close paren when parens are balanced."
+  :group 'parinfer
+  :type 'boolean)
 
-(defvar parinfer-lighters
-  '(" Parinfer:Indent" . " Parinfer:Paren")
+(defcustom parinfer-lighters
+  '("Parinfer:Indent" . "Parinfer:Paren")
   "Parinfer lighters in mode line.
 
-The car of it is used in parinfer indent mode, the cdr
-used in parinfer paren mode.")
+The modeline shows the car in indent mode and the cdr in paren
+mode."
+  :group 'parinfer
+  :type '(cons (string :tag "Indent mode lighter")
+               (string :tag "Paren mode lighter")))
+
+(defcustom parinfer-preview-cursor-scope nil
+  "Set it to t will show cursor scop in Indent Mode.
+
+It will show the cursor's scope on an empty line by inserting
+close-parens after it."
+  :group 'parinfer
+  :type 'boolean)
+
+(defcustom parinfer-delay-invoke-threshold 6000
+  "Threshold for 'parinfer-mode' delay processing."
+  :group 'parinfer
+  :type 'number)
+
+(defcustom parinfer-delay-invoke-idle 0.3
+  "The delay time(seconds) for parinfer delay processing."
+  :group 'parinfer
+  :type 'number)
+
+(defcustom parinfer-display-error nil
+  "If display error when parinfer failed in Indent Mode."
+  :group 'parinfer
+  :type 'boolean)
 
 (defvar parinfer-mode-enable-hook nil
   "Call after parinfer mode is enabled.")
@@ -103,21 +141,6 @@ One argument for hook function, MODE present for the mode will be used.")
 
 (defvar parinfer-after-execute-hook nil
   "Call after parinfer executed.")
-
-(defvar parinfer-preview-cursor-scope nil
-  "Set it to t will show cursor scop in Indent Mode.
-
-It will show the cursor's scope on an empty line by inserting
-close-parens after it.")
-
-(defvar parinfer-delay-invoke-threshold 6000
-  "Threshold for 'parinfer-mode' delay processing.")
-
-(defvar parinfer-delay-invoke-idle 0.3
-  "The delay time(seconds) for parinfer delay processing.")
-
-(defvar parinfer-display-error nil
-  "If display error when parinfer failed in Indent Mode.")
 
 ;; -----------------------------------------------------------------------------
 ;; Internal variable and constants
@@ -382,10 +405,14 @@ Buffer text, we should see a confirm message."
   (parinfer--goto-current-toplevel))
 
 (defun parinfer--lighter ()
-  "Return the lighter for specify mode."
-  (if (eq 'paren parinfer--mode)
-      (cdr parinfer-lighters)
-    (car parinfer-lighters)))
+  "Return the lighter for the current mode."
+  (let ((str (if (eq 'paren parinfer--mode)
+                 (cdr parinfer-lighters)
+               (car parinfer-lighters))))
+    ;; Add the space in the lighter automatically
+    (if (equal (elt str 0) ?\s)
+        str
+      (concat " " str))))
 
 (defun parinfer--ediff-init-keys ()
   "Inits for ediff.  since we don't need all features, simplify opeators."
