@@ -87,7 +87,7 @@ used in parinfer paren mode.")
 
 (defvar parinfer-extensions
   '(defaults pretty-parens smart-yank)
- "Parinfer extensions, which will be enabled when run parinfer.")
+  "Parinfer extensions, which will be enabled when run parinfer.")
 
 (defvar parinfer-mode-enable-hook nil
   "Call after parinfer mode is enabled.")
@@ -349,8 +349,8 @@ Its output is a plist, which context is *similar* the below:
  :commands cmd1 cmd2 cmd3
  :regexps regexp1 regexp2 regexp3"
   (let ((list (cdr (assq strategy-name parinfer-strategy))))
-    `(:commands ,(cl-remove-if-not #'symbolp list)
-      :regexps  ,(cl-remove-if-not #'stringp list))))
+    (list :commands (cl-remove-if-not #'symbolp list)
+          :regexps  (cl-remove-if-not #'stringp list))))
 
 (defun parinfer-strategy-add (strategy commands)
   "Append new commands to STRATEGY.
@@ -538,10 +538,10 @@ Buffer text, we should see a confirm message."
         (parinfer--invoke-parinfer-instantly)
         (parinfer--goto-line ln)
         (forward-char x))
-     (cond
-      ((eq 'paren parinfer--mode) (parinfer-paren))
-      ((eq 'indent parinfer--mode) (parinfer-indent-instantly))
-      (t "nothing"))))
+    (cond
+     ((eq 'paren parinfer--mode) (parinfer-paren))
+     ((eq 'indent parinfer--mode) (parinfer-indent-instantly))
+     (t "nothing"))))
 
 (defun parinfer--invoke-parinfer (&optional pos)
   "Supposed to be called after each content change.
@@ -555,7 +555,7 @@ POS is the position we want to call parinfer."
      ((eq 'paren parinfer--mode) (parinfer-paren))
      ((eq 'indent parinfer--mode) (parinfer-indent))
      (t "nothing"))))
-    
+
 (defun parinfer--should-skip-this-command-p ()
   "Should parinfer skip this command."
   (parinfer--strategy-match-p this-command 'skip))
@@ -612,7 +612,7 @@ This will finish delay processing immediately."
   (when (and (bound-and-true-p parinfer-region-mode)
              (not (use-region-p)))
     (parinfer--region-mode-disable))
-  
+
   (when this-command
     (cond
      ((not (symbolp this-command))
