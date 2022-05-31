@@ -86,14 +86,15 @@
   "Enable parinfer debug when set to t.")
 
 (defcustom parinfer-auto-switch-indent-mode nil
-  "Switch back to indent mode automatically if parens are balanced."
-  :group 'parinfer
-  :type 'boolean)
+  "Switch back to indent mode automatically if parens are balanced.
 
-(defcustom parinfer-auto-switch-indent-mode-when-closing nil
-  "Switch back to indent mode after inserting a close paren when parens are balanced."
+nil: never
+t: after every command if parens are balanced
+`closing': only after inserting a closing paren"
   :group 'parinfer
-  :type 'boolean)
+  :type '(choice (const :tag "Never" nil)
+                 (const :tag "Whenever parens are balanced" t)
+                 (const :tag "Only after inserting a close paren" closing)))
 
 (defcustom parinfer-lighters
   '("Parinfer:Indent" . "Parinfer:Paren")
@@ -677,12 +678,13 @@ CONTEXT is the context for parinfer execution."
   "Should we automatically switch to indent mode?"
   (and (parinfer--paren-balanced-p)
        (not parinfer--first-load)
-       (or parinfer-auto-switch-indent-mode
-           (and parinfer-auto-switch-indent-mode-when-closing
-                (let ((l-c-e last-command-event))
-                  (and (characterp l-c-e)
-                       (string-match-p "\\s)"
-                                       (string l-c-e))))))))
+       (pcase parinfer-auto-switch-indent-mode
+         (`closing
+          (let ((l-c-e last-command-event))
+            (and (characterp l-c-e)
+                 (string-match-p "\\s)"
+                                 (string l-c-e)))))
+         (_ parinfer-auto-switch-indent-mode))))
 
 ;; -----------------------------------------------------------------------------
 ;; Parinfer commands
