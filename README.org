@@ -1,141 +1,119 @@
 #+TITLE: Parinfer Mode
-#+AUTHOR: DogLooksGood
 
-[[file:images/logo.png]]
+* Why fork
 
-* Deprecated
+[[https://github.com/DogLooksGood/parinfer-mode][Parinfer Mode]] is unmaintained.
 
-This project is no longer maintained.I have no success for a fast enough implementation in Emacs Lisp.
+[[https://github.com/justinbarclay/parinfer-rust-mode][parinfer-rust-mode]] seems okay if it works, but it…
 
-Fortunately, there's a [[https://github.com/justinbarclay/parinfer-rust-mode][parinfer-rust-mode]]!
+- requires either having a Rust compiler or downloading a prebuilt binary
+- relies on a [[https://github.com/justinbarclay/parinfer-rust][fork]] of [[https://github.com/eraserhd/parinfer-rust][parinfer-rust]], and
+- has itself not had an update since April 2021.
 
-* Demo
-[[file:images/demo.gif]]
-
-* Table of contents
-- [[#what-is-parinfer][What Is Parinfer]]
-- [[#installation][Installation]]
-- [[#indent-and-paren-modes][Indent And Paren Modes]]
-- [[#configurations][Configurations]]
-- [[#credits][Credits]]
-- [[#license][License]]
-- [[#contribution][Contribution]]
+As I rely on this mode to do all my Lisp editing, I figured I might as well make some changes to my local copy.
 
 * What Is Parinfer
-*Parinfer* is a proof-of-concept editor mode for Lisp programming languages.
-It will infer some changes to keep Parens and Indentation inline with one another.
-Parinfer consists of two modes:
 
-- Indent Mode :: Indent Mode gives you full control of indentation, while Parinfer corrects parens.
-- Paren Mode :: Paren Mode gives you full control of parens, while Parinfer corrects indentation.
+#+begin_quote
+*/Parinfer/* is a proof-of-concept editor mode for Lisp programming languages. It simplifies the way we write Lisp by auto-adjusting parens when indentation changes and vice versa. The hope is to make basic Lisp-editing easier for newcomers and experts alike, while still allowing existing plugins like Paredit to satisfy the need for more advanced operations.
 
-To learn more about Parinfer, please take a look at its [[https://shaunlebron.github.io/parinfer/][home page]].
+— https://shaunlebron.github.io/parinfer/
+#+end_quote
 
-And the *parinfer-mode* is the implementation on Emacs with [[https://github.com/oakmac/parinfer-elisp][parinfer-elisp]].
+There are two modes, /Indent/ and /Paren/. Indent mode allows you to edit indentation, while Parinfer automatically adjusts parens; Paren mode allows you to edit parens, while Parinfer automatically adjusts indentation.
 
 * Installation
-Parinfer is available on MELPA(and MELPA Stable) now, I recommend to install with [[https://github.com/jwiegley/use-package][use-package]].
 
-Add following code to your ~.emacs~ or ~init.el~.
+#+begin_src emacs-lisp
+(straight-use-package '(parinfer :host github :repo "kisaragi-hiu/parinfer-mode"))
+#+end_src
+
+Recommended configuration:
 
 #+BEGIN_SRC elisp
-  (use-package parinfer
-    :ensure t
-    :bind
-    (("C-," . parinfer-toggle-mode))
-    :init
-    (progn
-      (setq parinfer-extensions
-            '(defaults       ; should be included.
-              pretty-parens  ; different paren styles for different modes.
-              lispy          ; If you use Lispy. With this extension, you should install Lispy and do not enable lispy-mode directly.
-              paredit        ; Bindings for Paredit commands
-              smart-tab      ; C-b & C-f jump positions and smart shift with tab & S-tab.
-              smart-yank))   ; Yank behavior depend on mode.
-      (add-hook 'clojure-mode-hook #'parinfer-mode)
-      (add-hook 'emacs-lisp-mode-hook #'parinfer-mode)
-      (add-hook 'common-lisp-mode-hook #'parinfer-mode)
-      (add-hook 'scheme-mode-hook #'parinfer-mode)
-      (add-hook 'lisp-mode-hook #'parinfer-mode)))
+(use-package parinfer-mode
+  :init
+  (setq parinfer-extensions
+        (list 'defaults       ; should be included.
+              'pretty-parens  ; different paren styles for different modes.
+              'lispy          ; If you use Lispy. With this extension, you should install Lispy and do not enable lispy-mode directly.
+              'paredit        ; Bindings for Paredit commands
+              'smart-tab      ; C-b & C-f jump positions and smart shift with tab & S-tab.
+              'smart-yank))   ; Yank behavior depend on mode.
+  (add-hook 'clojure-mode-hook #'parinfer-mode)
+  (add-hook 'scheme-mode-hook #'parinfer-mode)
+  ;; Major modes run hooks of their entire ancestry. Adding this to
+  ;; lisp-data-mode is enough for it to take effect in lisp-mode and
+  ;; emacs-lisp-mode, both of which are derived from lisp-data-mode.
+  (if (boundp 'lisp-data-mode-hook)
+      (add-hook 'lisp-data-mode-hook #'parinfer-mode)
+    ;; Before Emacs 28, emacs-lisp-mode derives from lisp-mode, so add
+    ;; the hook there.
+    (add-hook 'lisp-mode-hook #'parinfer-mode))
+  :config
+  (define-key parinfer-mode-map
+    (kbd "C-,") #'parinfer-toggle-mode))
 #+END_SRC
 
-* Indent And Paren Modes
-Toggle *Indent Mode* and *Paren Mode* with command ~parinfer-toggle-mode~.
+* Commands
 
-** Avoid unexpect buffer changes.
-Whenever you switch to *Indent Mode*, parinfer-mode will correct all parens of current buffer.
+- =parinfer-toggle-mode= :: toggle between indent mode and paren mode
+- =parinfer-diff= :: show how switching to indent mode will modify the buffer
+- =parinfer-auto-fix= :: manual trigger for auto adjustment of indentation for the whole buffer (when parens are balanced)
 
-After opening a file, the parinfer-mode enable *Indent Mode* if it won't make any changes.
-Otherwise, *Paren Mode* will be enabled, you can switch to *Indent Mode* manually later.
+* Configuration
 
-Alternatively, you can use ~parinfer-diff~ command to see how will *Indent Mode* modify the buffer with ~Ediff~.
+- =parinfer-auto-switch-indent-mode=
 
-[[file:images/diff_demo.gif]]
+  Possible values: =nil= (default), =t=, =closing=
 
-Also, There's a command ~parinfer-auto-fix~ to fix wrong indentation for whole buffer. (Only works with balanced parens)
+  Switch to indent mode whenever parens are balanced in paren mode.
 
-* Configurations
-** parinfer-auto-switch-indent-mode
-#+BEGIN_SRC emacs-lisp
-  (setq parinfer-auto-switch-indent-mode nil)  ;; default
-#+END_SRC
+  Set this to =closing= to only do so after inserting a closing paren.
 
-~t~ for enable, Parinfer will auto switch to *Indent Mode* whenever parens are balance in *Paren Mode*.
+- =parinfer-delay-invoke-threshold=
 
-** parinfer-auto-switch-indent-mode-when-closing
-#+BEGIN_SRC emacs-lisp
-  (setq parinfer-auto-switch-indent-mode-when-closing nil)  ;; default
-#+END_SRC
+  Possible values: number of characters; defaults to 6000
 
-~t~ for enable, Parinfer will auto switch to *Indent Mode* when the inserted close parens (~)~, ~]~, ~}~) balance the parens of current sexp.
-** parinfer-delay-invoke-threshold
-#+BEGIN_SRC emacs-lisp
-  (setq parinfer-delay-invoke-threshold 6000)  ;; default
-#+END_SRC
+  Text processing is normally done immediately after a command completes. If the text to be processed has more than this number of characters, it will instead be done in an idle timer (after =parinfer-delay-invoke-idle= seconds, which defaults to 0.3).
 
-When the length of text for processing is longer than this, Parinfer will process text after a idle delay instead of process immediately.
+- =parinfer-lighters= (default: =("Parinfer:Indent" . "Parinfer:Paren")=)
 
-** parinfer-delay-invoke-idle
-#+BEGIN_SRC emacs-lisp
-  (setq parinfer-delay-invoke-idle 0.3)  ;; default
-#+END_SRC
+  The mode line shows “Parinfer:Indent” when Parinfer is active in indent mode, “Parinfer:Paren” if it is in paren mode. The car is the indent mode string, while the cdr is the paren mode string.
 
-The idle seconds before Parinfer processing text on large sexp.
+  There is no need to add the leading space. It is added automatically.
 
-** parinfer-extensions
-#+BEGIN_SRC emacs-lisp
-  (setq parinfer-extensions '(defaults pretty-parens smart-yank))
-#+END_SRC
+- =parinfer-extensions= (default: =(defaults pretty-parens smart-yank)=)
 
-The extensions that will be enabled. The list could contain followings:
+  Enabled extensions.
 
-| Extension     | Function                                                                              |
-|---------------+---------------------------------------------------------------------------------------|
-| defaults      | Should be enabled, basic compatibility                                                |
-| pretty-parens | Use dim style for *Indent Mode*, rainbow delimiters for *Paren Mode*                  |
-| smart-yank    | Yank will preserve indentation in *Indent Mode*, will preserve parens in *Paren Mode* |
-| smart-tab     | ~C-f~ & ~C-b~ on empty line will goto next/previous import indentation.               |
-| paredit       | Introduce some paredit commands from paredit-mode.                                    |
-| lispy         | Integration with Lispy.                                                               |
+  An extension contains different pieces of code that run at different stages (entering indent mode, entering paren mode, enabling and disabling =parinfer-mode=).
 
-** parinfer-lighters
-#+BEGIN_SRC emacs-lisp
-  (setq parinfer-lighters '(" Parinfer:Indent" . "Parinfer:Paren"))
-#+END_SRC
+  Possible extensions:
 
-* Troubleshooting
-If Parinfer seems to be indenting incorrectly, ensure ~indent-tabs-mode~ is set to ~nil~ via ~(setq-default indent-tabs-mode nil)~. While Parinfer's theoretical model is able to correctly handle indentation with tabs, ~parinfer-mode~ can currently only handle indentation using spaces.
+  | Extension     | Function                                                                              |
+  |---------------+---------------------------------------------------------------------------------------|
+  | defaults      | Should be enabled, basic compatibility                                                |
+  | pretty-parens | Dim parens in *Indent Mode*, use rainbow delimiters in *Paren Mode*  |
+  | smart-yank    | Make yank (paste) preserve indentation in *Indent Mode* & preserve parens in *Paren Mode*  |
+  | smart-tab     | Make ~C-f~ & ~C-b~ on an empty line go to next/previous indentation, possibly inserting extra spaces in the process. |
+  | paredit       | Introduce some paredit commands from paredit-mode.                                    |
+  | lispy         | Integration with Lispy.                                                               |
+
+* Current Issues
+
+=parinfer-mode= currently assumes space-based indentation and will break if tabs are being used.
 
 * Credits
+- [[https://github.com/DogLooksGood][Shi Tianshu]] :: Original creator of parinfer-mode
+
+** Original credits
 - [[https://github.com/shaunlebron][shaunlebron]] :: Create [[https://shaunlebron.github.io/parinfer/][Parinfer]].
 - [[https://github.com/oakmac][oakmac]] :: Bring Parinfer to Emacs with [[https://github.com/oakmac/parinfer-elisp][parinfer-elisp]].
 - [[https://github.com/tumashu][tumashu]] :: Help me a lot in writing this plugin.
 - [[https://github.com/purcell][purcell]] & [[https://github.com/syohex][syohex]] :: Advice and Tips for writing emacs plugin
 
-* Contribution
-Please open an issue if there's any bug or suggestion, and PR is welcomed!
-
 * License
 parinferlib.el from [[https://github.com/oakmac/parinfer-elisp][parinfer-elisp]], is licensed under the [[https://github.com/oakmac/parinfer-elisp/blob/master/LICENSE.md][ISC]].
 
-Rest part licensed under the GPLv3.
+The rest is licensed under the GPLv3.
