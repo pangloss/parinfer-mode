@@ -69,10 +69,8 @@ string."
   'kill-line
   'kill-region
   'kill-word
-  'newline
   'newline-and-indent
   'self-insert-command
-  'evil-delete-char
   'evil-shift-left
   'evil-shift-left-line
   'evil-shift-right
