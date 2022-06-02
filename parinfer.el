@@ -25,33 +25,20 @@
 ;; Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 ;; Boston, MA 02110-1301, USA.
 
-;;; Installation
-
-;; * Clone this repo.
-;; #+BEGIN_SRC shell
-;;   cd /some/path/parinfer-mode
-;;   git clone https://github.com/DogLooksGood/parinfer-mode.git
-;; #+END_SRC
-;; * Emacs configurations.
-;; #+BEGIN_SRC emacs-lisp
-;;   ;; Add parinfer-mode to load-path.
-;;   (add-to-list 'load-path "~/some/path/parinfer-mode")
-;;   ;; Require it!
-;;   (require 'parinfer)
-;; #+END_SRC
-
 ;;; Commentary:
-;; For now, project will be updated frequently.
-;; The document is hosted on github.
-;; https://github.com/DogLooksGood/parinfer-mode
 
-;; * Credits
+;; Credits:
+;;
+;; - Shi Tianshu <https://github.com/DogLooksGood>, creator of parinfer-mode
+;;
+;; Original credits:
+;;
 ;; - [[https://github.com/shaunlebron][shaunlebron]] :: Create Parinfer.
 ;; - [[https://github.com/oakmac][oakmac]] :: Bring Parinfer to Emacs.
 ;; - [[https://github.com/tumashu][tumashu]] :: Help me a lot in writing this plugin.
 ;; - [[https://github.com/purcell][purcell]] & [[https://github.com/syohex][syohex]] :: Advice and Tips for writing Emacs plugin.
-;; * License
-;; Licensed under the GPLv3.
+;;
+;; License: GPLv3.
 
 ;;; Code:
 
