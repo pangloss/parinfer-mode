@@ -479,30 +479,20 @@ This will finish delay processing immediately."
   (when (and (not (bound-and-true-p parinfer-region-mode))
              (use-region-p))
     (parinfer--region-mode-enable))
-
   (when (and (bound-and-true-p parinfer-region-mode)
              (not (use-region-p)))
     (parinfer--region-mode-disable))
-
   (when this-command
     (cond
-     ((not (symbolp this-command))
-      nil)
-
+     ((not (symbolp this-command)) nil)
      ((parinfer--should-clean-up-p)
       (parinfer--clean-up))
-
      ((parinfer--in-comment-or-string-p) nil)
-
      ((parinfer--should-skip-this-command-p) nil)
-
      ((parinfer--should-invoke-instantly-p)
       (parinfer--invoke-parinfer-instantly (point)))
-
      ((parinfer--should-invoke-p)
-      (parinfer--invoke-parinfer (point)))
-
-     (t nil)))
+      (parinfer--invoke-parinfer (point)))))
   (setq parinfer--last-line-number (line-number-at-pos (point))))
 
 (defun parinfer--update-text-modified ()
