@@ -883,22 +883,26 @@ invoke parinfer after every semicolon input."
 (defun parinfer-double-quote ()
   "Insert a pair of quotes, or a single quote after backslash."
   (interactive)
-  (cond (;; insert just one quote after backslash
-         (= (char-before) ?\\)
-         (insert "\""))
-        ;; bonus: insert \" in a string
-        ((parinfer--in-string-p)
-         (insert "\\\""))
-        ;; otherwise insert a pair of quotes
-        (t
-         (insert "\"\"")
-         (parinfer--invoke-parinfer-when-necessary)
-         ;; Manage the whitespace
-         (unless (or (eolp)
-                     (= (char-after) ?\)))
-           (insert " ")
-           (forward-char -1))
-         (forward-char -1))))
+  (cond
+   ;; insert just one quote after backslash
+   ((= (char-before) ?\\)
+    (insert "\""))
+   ;; Skip through the quote if we're at the end of the string
+   ((= (char-after) ?\")
+    (forward-char 1))
+   ;; Insert \" in a string
+   ((parinfer--in-string-p)
+    (insert "\\\""))
+   ;; Otherwise insert a pair of quotes
+   (t
+    (insert "\"\"")
+    (parinfer--invoke-parinfer-when-necessary)
+    ;; Manage the whitespace
+    (unless (or (eolp)
+                (= (char-after) ?\)))
+      (insert " ")
+      (forward-char -1))
+    (forward-char -1))))
 
 (defun parinfer-toggle-mode ()
   "Switch parinfer mode between Indent Mode and Paren Mode."
