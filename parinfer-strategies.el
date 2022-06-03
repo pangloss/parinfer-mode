@@ -77,6 +77,7 @@ string."
   'evil-shift-right-line
   'sp-insert-pair)
 (parinfer-strategy-add 'instantly
+  'parinfer-double-quote
   'delete-region
   'newline
   'evil-change

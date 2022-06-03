@@ -902,6 +902,7 @@ invoke parinfer after every semicolon input."
         ;; otherwise insert a pair of quotes
         (t
          (insert "\"\"")
+         (parinfer--invoke-parinfer-when-necessary)
          ;; Manage the whitespace
          (unless (or (eolp)
                      (= (char-after) ?\)))
