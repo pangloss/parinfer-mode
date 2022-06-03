@@ -900,8 +900,14 @@ invoke parinfer after every semicolon input."
         ((parinfer--in-string-p)
          (insert "\\\""))
         ;; otherwise insert a pair of quotes
-        (t (insert "\"\"")
-           (forward-char -1))))
+        (t
+         (insert "\"\"")
+         ;; Manage the whitespace
+         (unless (or (eolp)
+                     (= (char-after) ?\)))
+           (insert " ")
+           (forward-char -1))
+         (forward-char -1))))
 
 (defun parinfer-toggle-mode ()
   "Switch parinfer mode between Indent Mode and Paren Mode."
