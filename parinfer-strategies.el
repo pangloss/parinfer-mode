@@ -70,7 +70,6 @@ string."
   'kill-region
   'kill-word
   'newline-and-indent
-  'self-insert-command
   'evil-shift-left
   'evil-shift-left-line
   'evil-shift-right
@@ -79,6 +78,7 @@ string."
 (parinfer-strategy-add 'instantly
   'parinfer-double-quote
   'delete-region
+  'self-insert-command
   'newline
   'evil-change
   'evil-change-line
