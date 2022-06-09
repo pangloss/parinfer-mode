@@ -76,10 +76,12 @@ string."
   'evil-shift-right-line
   'sp-insert-pair)
 (parinfer-strategy-add 'instantly
+  'indent-for-tab-command
   'parinfer-double-quote
   'delete-region
   'self-insert-command
   'newline
+  'evil-join
   'evil-change
   'evil-change-line
   'evil-change-whole-line

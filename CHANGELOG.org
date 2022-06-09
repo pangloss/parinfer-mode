@@ -1,5 +1,16 @@
-#+TITLE: CHANGELOG
-#+AUTHOR: DogLooksGood
+#+TITLE: Change Log
+
+* Unreleased
+
+- Fixed =parinfer--plist2alist= used before it is defined
+- Removed the half-complete One mode
+- Inserting double quote does what I mean (hopefully)
+- Strategies:
+  - paredit commands always use the default strategy; the =paredit= extension just adds bindings now
+  - =newline= and =evil-delete-char= unambiguously trigger reindent / paren update instantly
+  - =self-insert-command=, =evil-join=, =indent-for-tab-command= trigger reindent / paren update instantly
+  - Parinfer is triggered after inserting a double quote
+    - Previously because we're in a string the new paren isn't added
 
 * kisaragi-0.5.0
 
