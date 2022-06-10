@@ -78,10 +78,12 @@ string."
 (parinfer-strategy-add 'instantly
   'indent-for-tab-command
   'parinfer-double-quote
+  'outshine-self-insert-command
   'delete-region
   'self-insert-command
   'newline
   'evil-join
+  'evil-replace
   'evil-change
   'evil-change-line
   'evil-change-whole-line
