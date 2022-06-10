@@ -887,19 +887,22 @@ invoke parinfer after every semicolon input."
    ;; insert just one quote after backslash
    ((= (char-before) ?\\)
     (insert "\""))
-   ;; Skip through the quote if we're at the end of the string
-   ((= (char-after) ?\")
-    (forward-char 1))
-   ;; Insert \" in a string
+   ;; Insert \"\" in a string
    ((parinfer--in-string-p)
-    (insert "\\\""))
+    ;; Skip through the quote if we're at the end of a non-empty string
+    (if (and (= (char-after) ?\")
+             (not (= (char-before) ?\")))
+        (forward-char 1)
+      (insert "\\\"\\\"")
+      (forward-char -2)))
    ;; Otherwise insert a pair of quotes
    (t
     (insert "\"\"")
     (parinfer--invoke-parinfer-when-necessary)
     ;; Manage the whitespace
     (unless (or (eolp)
-                (= (char-after) ?\)))
+                (eql #x29 (char-after (point)))
+                (eql #x20 (char-after (point))))
       (insert " ")
       (forward-char -1))
     (forward-char -1))))
