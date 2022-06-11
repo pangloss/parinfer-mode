@@ -477,6 +477,7 @@ This will finish delay processing immediately."
      ((parinfer--should-clean-up-p)
       (parinfer--clean-up))
      ((parinfer--in-comment-or-string-p) nil)
+     ((parinfer--unfinished-string-p) nil)
      ((parinfer--should-skip-this-command-p) nil)
      ((parinfer--should-invoke-instantly-p)
       (parinfer--invoke-parinfer-instantly (point)))
