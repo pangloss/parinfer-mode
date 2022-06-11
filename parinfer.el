@@ -221,6 +221,7 @@ Clean up delay if exists."
         (eq (point) (line-end-position))))))
 
 (defun parinfer--unfinished-string-p ()
+  "Whether there is an unclosed string in the buffer."
   (save-mark-and-excursion
     (goto-char (point-max))
     (parinfer--in-string-p)))
@@ -232,7 +233,7 @@ Clean up delay if exists."
   parinfer--mode)
 
 (defun parinfer--set-text-modified ()
-  "Set ‘parinfer--text-modified’ to t when `this-command' use default invoke strategy."
+  "Set ‘parinfer--text-modified’ when the strategy of this command is `default'."
   (when (and (symbolp this-command)
              (parinfer-strategy-match-p this-command 'default))
     (setq parinfer--text-modified t)))
