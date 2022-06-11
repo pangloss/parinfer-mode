@@ -232,12 +232,6 @@ Clean up delay if exists."
   "Return the current `parinfer--mode'."
   parinfer--mode)
 
-(defun parinfer--set-text-modified ()
-  "Set ‘parinfer--text-modified’ when the strategy of this command is `default'."
-  (when (and (symbolp this-command)
-             (parinfer-strategy-match-p this-command 'default))
-    (setq parinfer--text-modified t)))
-
 (defun parinfer--switch-to-indent-mode-1 ()
   "Switch to indent mode auxiliary function."
   (setq parinfer--mode 'indent)
@@ -486,6 +480,7 @@ This will finish delay processing immediately."
   (setq parinfer--last-line-number (line-number-at-pos (point))))
 
 (defun parinfer--update-text-modified ()
+  "Mark text as modified when the strategy of this command is `default'."
   (when (and (symbolp this-command)
              (parinfer-strategy-match-p this-command 'default)
              (not (parinfer--in-string-p)))
