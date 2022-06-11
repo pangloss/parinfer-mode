@@ -69,9 +69,6 @@
   "Parinfer faces."
   :group 'faces)
 
-(defvar parinfer-debug nil
-  "Enable parinfer debug when set to t.")
-
 (defcustom parinfer-auto-switch-indent-mode nil
   "Switch back to indent mode automatically if parens are balanced.
 
@@ -182,7 +179,7 @@ One argument for hook function, MODE present for the mode will be used.")
 Reset delay if exists."
   `(progn
      ,@body
-     (parinfer--setq-text-modified t)
+     (setq parinfer--text-modified t)
      (parinfer--invoke-parinfer)))
 
 (defmacro parinfer-do (&rest body)
@@ -193,17 +190,8 @@ Clean up delay if exists."
      (when parinfer--delay-timer
        (parinfer--clean-up))
      ,@body
-     (parinfer--setq-text-modified t)
+     (setq parinfer--text-modified t)
      (parinfer--invoke-parinfer)))
-
-(defmacro parinfer--setq-text-modified (value)
-  "Set ‘parinfer--text-modified’ to VALUE."
-  `(progn
-     (setq parinfer--text-modified ,value)
-     (when parinfer-debug
-       (message "parinfer: set parinfer--text-modified to %S."
-                parinfer--text-modified))))
-
 
 ;; -----------------------------------------------------------------------------
 ;; Helpers
@@ -247,7 +235,7 @@ Clean up delay if exists."
   "Set ‘parinfer--text-modified’ to t when `this-command' use default invoke strategy."
   (when (and (symbolp this-command)
              (parinfer-strategy-match-p this-command 'default))
-    (parinfer--setq-text-modified t)))
+    (setq parinfer--text-modified t)))
 
 (defun parinfer--switch-to-indent-mode-1 ()
   "Switch to indent mode auxiliary function."
@@ -584,8 +572,6 @@ This will finish delay processing immediately."
                      :end end
                      :window-start-pos window-start-pos
                      :line-number line-number)))
-    (when parinfer-debug
-      (message "text:%s" text))
     (list :text text :opts opts :orig orig)))
 
 (defun parinfer--apply-result (result context)
@@ -616,7 +602,7 @@ CONTEXT is the context for parinfer execution."
                    (insert (plist-get l :line)))
           (parinfer--goto-line line-number)
           (forward-char (plist-get result :cursor-x))))
-      (parinfer--setq-text-modified nil))))
+      (setq parinfer--text-modified nil))))
 
 (defun parinfer--execute-instantly (context)
   "Execute parinfer instantly with context CONTEXT."
@@ -796,7 +782,7 @@ If there's any change, display a confirm message in minibuffer."
     (progn
       (backward-delete-char 1)
       (if (parinfer--in-string-p)
-          (parinfer--setq-text-modified nil)
+          (setq parinfer--text-modified nil)
         (parinfer--invoke-parinfer)))))
 
 (defun parinfer-backward-kill-word ()
@@ -848,7 +834,7 @@ If there's any change, display a confirm message in minibuffer."
   "`yank', then reindent the buffer."
   (interactive)
   (call-interactively 'yank)
-  (parinfer--setq-text-modified t)
+  (setq parinfer--text-modified t)
   (parinfer-indent-buffer))
 
 (defun parinfer-mouse-drag-region ()
@@ -878,7 +864,7 @@ invoke parinfer after every semicolon input."
   (interactive)
   (call-interactively 'self-insert-command)
   (parinfer-indent)
-  (parinfer--setq-text-modified t))
+  (setq parinfer--text-modified t))
 
 (defun parinfer-double-quote ()
   "Insert a pair of quotes, or a single quote after backslash."

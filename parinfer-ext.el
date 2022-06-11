@@ -85,9 +85,6 @@ CLAUSES are the code for lifecycle.
   "For specified EXTENSION, call its LIFECYCLE function."
   (let ((func (intern (concat parinfer--extension-prefix
                               (symbol-name extension)))))
-    (when parinfer-debug
-      (message "Load extension: %s, available:%s" func
-               (functionp func)))
     (when (functionp func)
       (funcall func lifecycle))))
 
