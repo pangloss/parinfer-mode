@@ -457,7 +457,9 @@ This will finish delay processing immediately."
                  (eq f 'font-lock-comment-delimiter-face)))))))
 
 (defun parinfer--invoke-parinfer-when-necessary ()
-  "Invoke parinfer when necessary."
+  "Invoke parinfer when necessary.
+
+This is the entry point function added to `post-command-hook'."
   ;; correct parinfer-region-mode for any command.
   (when (and (not (bound-and-true-p parinfer-region-mode))
              (use-region-p))
@@ -476,10 +478,9 @@ This will finish delay processing immediately."
           (parinfer--invoke-parinfer-instantly (point)))
          ((parinfer--should-invoke-p)
           (parinfer--invoke-parinfer (point)))))))
-  (setq parinfer--last-line-number (line-number-at-pos (point))))
-
-(defun parinfer--update-text-modified ()
-  "Mark text as modified when the strategy of this command is `default'."
+  (setq parinfer--last-line-number (line-number-at-pos (point)))
+  ;; Mark text as modified when the strategy of this command is
+  ;; `default'.
   (when (and (symbolp this-command)
              (parinfer-strategy-match-p this-command 'default)
              (not (parinfer--in-string-p)))
@@ -519,14 +520,12 @@ This will finish delay processing immediately."
   (setq-mode-local parinfer-mode indent-tabs-mode nil)
   (setq parinfer--last-line-number (line-number-at-pos (point)))
   (add-hook 'post-command-hook 'parinfer--invoke-parinfer-when-necessary t t)
-  (add-hook 'post-command-hook 'parinfer--update-text-modified t t)
   (parinfer--extension-lifecycle :mount)
   (parinfer--init)
   (run-hooks 'parinfer-mode-enable-hook))
 
 (defun parinfer-mode-disable ()
   "Disable 'parinfer-mode'."
-  (remove-hook 'post-command-hook 'parinfer--update-text-modified t)
   (remove-hook 'post-command-hook 'parinfer--invoke-parinfer-when-necessary t)
   (parinfer--extension-lifecycle :unmount)
   (parinfer--region-mode-disable)
