@@ -20,7 +20,7 @@ the following:
  --------------   -------------------------------------------
  :default         readjust indent or paren (delay on large sexp)
  :instantly       readjust indent or paren
- :reindent        reindent regardless of mode
+ :shift-right     make evil-shift-right work more as expected
  :skip            do not invoke parinfer
 
 The values are either symbols or regexp strings that are used to
@@ -49,9 +49,10 @@ string."
      (plist-get parinfer-strategies strategy)
      :test #'equal)))
 
-(parinfer-strategy-add :reindent
+(parinfer-strategy-add :default
   'evil-shift-left
-  'evil-shift-left-line
+  'evil-shift-left-line)
+(parinfer-strategy-add :shift-right
   'evil-shift-right
   'evil-shift-right-line)
 (parinfer-strategy-add :default

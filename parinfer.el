@@ -476,7 +476,12 @@ This is the entry point function added to `post-command-hook'."
         (cond
          ((parinfer-strategy-match-p this-command :instantly)
           (parinfer--invoke-parinfer-instantly (point)))
-         ((parinfer-strategy-match-p this-command :reindent))
+         ((parinfer-strategy-match-p this-command :shift-right)
+          (let ((parinfer--mode 'indent))
+            (parinfer-readjust-paren-instantly))
+          (save-excursion
+            (beginning-of-line)
+            (parinfer-readjust-indent)))
          ((parinfer-strategy-match-p this-command :default)
           (parinfer--invoke-parinfer (point))
           (unless (parinfer--in-string-p)
