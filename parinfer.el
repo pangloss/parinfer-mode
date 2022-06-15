@@ -247,9 +247,9 @@ Buffer text, we should see a confirm message."
   (if (or (not parinfer--first-load)
           (string= (buffer-name) " *temp*"))
       (progn
-        (parinfer-indent-buffer)
+        (parinfer-readjust-paren-buffer)
         (parinfer--switch-to-indent-mode-1))
-    (when (parinfer-indent-with-confirm)
+    (when (parinfer-readjust-paren-with-confirm)
       (setq parinfer--first-load nil)
       (parinfer--switch-to-indent-mode-1))))
 
@@ -399,8 +399,8 @@ POS is the position we want to call parinfer."
         (parinfer--goto-line ln)
         (forward-char x))
     (cond
-     ((eq 'paren parinfer--mode) (parinfer-paren))
-     ((eq 'indent parinfer--mode) (parinfer-indent-instantly))
+     ((eq 'paren parinfer--mode) (parinfer-readjust-indent))
+     ((eq 'indent parinfer--mode) (parinfer-readjust-paren-instantly))
      (t "nothing"))))
 
 (defun parinfer--invoke-parinfer (&optional pos)
@@ -418,8 +418,8 @@ POS is the position we want to call parinfer."
         (parinfer--invoke-parinfer)
         (goto-char current-pos))
     (cond
-     ((eq 'paren parinfer--mode) (parinfer-paren))
-     ((eq 'indent parinfer--mode) (parinfer-indent))
+     ((eq 'paren parinfer--mode) (parinfer-readjust-indent))
+     ((eq 'indent parinfer--mode) (parinfer-readjust-paren))
      (t "nothing"))))
 
 (defun parinfer--should-skip-this-command-p ()
@@ -539,7 +539,7 @@ This is the entry point function added to `post-command-hook'."
   (when (and (eq 'indent parinfer--mode)
              parinfer--region-shifted)
     (beginning-of-line)
-    (parinfer-indent-instantly)
+    (parinfer-readjust-paren-instantly)
     (when parinfer--x-after-shift
       (if (> parinfer--x-after-shift
              (- (line-end-position) (line-beginning-position)))
@@ -618,7 +618,7 @@ CONTEXT is the context for parinfer execution."
               (run-with-idle-timer
                parinfer-delay-invoke-idle
                nil
-               #'parinfer-indent-instantly))
+               #'parinfer-readjust-paren-instantly))
       (parinfer--execute-instantly context))))
 
 (defun parinfer--auto-switch-indent-mode-p ()
@@ -652,20 +652,20 @@ Use this to remove tab indentation of your code."
   (dolist (cmd '(mark-whole-buffer
                  indent-region
                  keyboard-quit
-                 parinfer-indent-buffer))
+                 parinfer-readjust-paren-buffer))
     (call-interactively cmd)))
 
-(defun parinfer-indent ()
+(defun parinfer-readjust-paren ()
   "Parinfer indent."
   (let ((context (parinfer--prepare)))
     (parinfer--execute context)))
 
-(defun parinfer-indent-instantly ()
+(defun parinfer-readjust-paren-instantly ()
   "Parinfer indent instantly."
   (let ((context (parinfer--prepare)))
     (parinfer--execute-instantly context)))
 
-(defun parinfer-indent-buffer ()
+(defun parinfer-readjust-paren-buffer ()
   "Call parinfer indent on whole buffer."
   (interactive)
   (let* ((window-start-pos (window-start))
@@ -709,7 +709,7 @@ parinferlib returned an error."
            'changed)
           (t 'unchanged))))
 
-(defun parinfer-indent-with-confirm ()
+(defun parinfer-readjust-paren-with-confirm ()
   "Call parinfer indent on whole buffer.
 
 If there's any change, display a confirm message in minibuffer."
@@ -749,7 +749,7 @@ If there's any change, display a confirm message in minibuffer."
             nil)
         t))))
 
-(defun parinfer-paren ()
+(defun parinfer-readjust-indent ()
   "Do parinfer paren  on current & previous top level S-exp."
   (when (and (ignore-errors (parinfer--reindent-sexp))
              (parinfer--auto-switch-indent-mode-p))
@@ -829,7 +829,7 @@ If there's any change, display a confirm message in minibuffer."
   (interactive)
   (call-interactively 'yank)
   (setq parinfer--text-modified t)
-  (parinfer-indent-buffer))
+  (parinfer-readjust-paren-buffer))
 
 (defun parinfer-mouse-drag-region ()
   "Should do clean up if it is needed."
@@ -857,7 +857,7 @@ This is the very special situation, since we always need
 invoke parinfer after every semicolon input."
   (interactive)
   (call-interactively 'self-insert-command)
-  (parinfer-indent)
+  (parinfer-readjust-paren)
   (setq parinfer--text-modified t))
 
 (defun parinfer-double-quote ()

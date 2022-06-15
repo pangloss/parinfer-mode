@@ -153,7 +153,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
 
 (defun parinfer-defaults:company-cancel (&ignored)
   "Invoke when company cancelled, ignore IGNORED."
-  (parinfer-indent))
+  (parinfer-readjust-paren))
 
 (defun parinfer-defaults:company-finish (&ignored)
   "Invoke when company finished, ignore IGNORED. "
@@ -324,7 +324,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
       (yank)
       (funcall m)
       (ignore-errors (parinfer--reindent-sexp))
-      (parinfer-indent-buffer)
+      (parinfer-readjust-paren-buffer)
       (setq yank-str (buffer-substring-no-properties (point-min) (point-max))))
     (parinfer-paren-run
      (insert yank-str)
@@ -409,7 +409,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
         (with-temp-buffer
           (insert text)
           (newline-and-indent)
-          (parinfer-indent-buffer)
+          (parinfer-readjust-paren-buffer)
           (funcall m)
           (setq pos-list (parinfer-smart-tab:find-possible-positions))))
       (goto-char begin)
