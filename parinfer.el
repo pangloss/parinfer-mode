@@ -384,7 +384,13 @@ Buffer text, we should see a confirm message."
   (abs (- (line-beginning-position) (point))))
 
 (defun parinfer--invoke-parinfer-instantly (&optional pos)
-  "Call Parinfer at POS immediately."
+  "Invoke Parinfer immediately.
+
+Readjust indentation in paren mode, readjust parens in indent
+mode. Paren readjustment is performed immediately, regardless of
+`parinfer-delay-invoke-threshold'.
+
+POS is the position we want to call parinfer."
   (if (and pos (not (eq pos (point))))
       (let ((ln (line-number-at-pos))
             (x (parinfer--cursor-x)))
@@ -398,7 +404,13 @@ Buffer text, we should see a confirm message."
      (t "nothing"))))
 
 (defun parinfer--invoke-parinfer (&optional pos)
-  "Supposed to be called after each content change.
+  "Invoke Parinfer.
+
+Readjust indentation in paren mode, readjust parens in indent
+mode. Paren readjustment is delayed after
+`parinfer-delay-invoke-idle' seconds of idle time if the text to
+be changed is longer than `parinfer-delay-invoke-threshold'.
+
 POS is the position we want to call parinfer."
   (if (and pos (not (eq pos (point))))
       (let ((current-pos (point)))
@@ -413,14 +425,6 @@ POS is the position we want to call parinfer."
 (defun parinfer--should-skip-this-command-p ()
   "Should parinfer skip this command."
   (parinfer-strategy-match-p this-command 'skip))
-
-(defun parinfer--should-invoke-instantly-p ()
-  "Should parinfer be invoked instantly."
-  (parinfer-strategy-match-p this-command 'instantly))
-
-(defun parinfer--should-invoke-p ()
-  "Should parinfer be invoked normally."
-  (parinfer-strategy-match-p this-command 'default))
 
 (defun parinfer--should-clean-up-p ()
   "Should parinfer do clean job."
@@ -460,13 +464,13 @@ This will finish delay processing immediately."
   "Invoke parinfer when necessary.
 
 This is the entry point function added to `post-command-hook'."
-  ;; correct parinfer-region-mode for any command.
-  (when (and (not (bound-and-true-p parinfer-region-mode))
-             (use-region-p))
-    (parinfer--region-mode-enable))
-  (when (and (bound-and-true-p parinfer-region-mode)
-             (not (use-region-p)))
-    (parinfer--region-mode-disable))
+  ;; Make sure `parinfer-region-mode' is synchronized with `use-region-p'.
+  (cond ((and (not (bound-and-true-p parinfer-region-mode))
+              (use-region-p))
+         (parinfer--region-mode-enable))
+        ((and (bound-and-true-p parinfer-region-mode)
+              (not (use-region-p)))
+         (parinfer--region-mode-disable)))
   (when (and this-command (symbolp this-command))
     (if (parinfer--should-clean-up-p)
         (parinfer--clean-up)
@@ -474,17 +478,12 @@ This is the entry point function added to `post-command-hook'."
                   (parinfer--in-comment-or-string-p)
                   (parinfer--unfinished-string-p))
         (cond
-         ((parinfer--should-invoke-instantly-p)
+         ((parinfer-strategy-match-p this-command 'instantly)
           (parinfer--invoke-parinfer-instantly (point)))
-         ((parinfer--should-invoke-p)
-          (parinfer--invoke-parinfer (point)))))))
-  (setq parinfer--last-line-number (line-number-at-pos (point)))
-  ;; Mark text as modified when the strategy of this command is
-  ;; `default'.
-  (when (and (symbolp this-command)
-             (parinfer-strategy-match-p this-command 'default)
-             (not (parinfer--in-string-p)))
-    (setq parinfer--text-modified t)))
+         ((parinfer-strategy-match-p this-command 'default)
+          (parinfer--invoke-parinfer (point))
+          (unless (parinfer--in-string-p)
+            (setq parinfer--text-modified t))))))))
 
 (defun parinfer--active-line-region ()
   "Auto adjust region so that the shift can work properly."
