@@ -635,28 +635,6 @@ CONTEXT is the context for parinfer execution."
                                  (string l-c-e)))))
          (_ parinfer-auto-switch-indent-mode))))
 
-;; -----------------------------------------------------------------------------
-;; Parinfer commands
-;; -----------------------------------------------------------------------------
-
-(defun parinfer-untabify-buffer ()
-  "Untabify whole buffer.
-
-Currently parinfer can not handle indentation with tab.
-Use this to remove tab indentation of your code."
-  (interactive)
-  (untabify (point-min) (point-max)))
-
-(defun parinfer-auto-fix ()
-  "Untabify whole buffer then reindent whole buffer."
-  (interactive)
-  (parinfer-untabify-buffer)
-  (dolist (cmd '(mark-whole-buffer
-                 indent-region
-                 keyboard-quit
-                 parinfer-readjust-paren-buffer))
-    (call-interactively cmd)))
-
 (defun parinfer-readjust-paren ()
   "Parinfer indent."
   (let ((context (parinfer--prepare)))
@@ -669,7 +647,6 @@ Use this to remove tab indentation of your code."
 
 (defun parinfer-readjust-paren-buffer ()
   "Call parinfer indent on whole buffer."
-  (interactive)
   (let* ((window-start-pos (window-start))
          (cursor-line (1- (line-number-at-pos)))
          (cursor-x (parinfer--cursor-x))
@@ -756,6 +733,28 @@ If there's any change, display a confirm message in minibuffer."
   (when (and (ignore-errors (parinfer--reindent-sexp))
              (parinfer--auto-switch-indent-mode-p))
     (parinfer--switch-to-indent-mode-1)))
+
+;; -----------------------------------------------------------------------------
+;; Parinfer commands
+;; -----------------------------------------------------------------------------
+
+(defun parinfer-untabify-buffer ()
+  "Untabify whole buffer.
+
+Currently parinfer can not handle indentation with tab.
+Use this to remove tab indentation of your code."
+  (interactive)
+  (untabify (point-min) (point-max)))
+
+(defun parinfer-auto-fix ()
+  "Untabify whole buffer then reindent whole buffer."
+  (interactive)
+  (parinfer-untabify-buffer)
+  (dolist (cmd '(mark-whole-buffer
+                 indent-region
+                 keyboard-quit))
+    (call-interactively cmd))
+  (parinfer-readjust-paren-buffer))
 
 (defun parinfer-ediff-quit ()
   "Quit ‘parinfer-diff’ directly, without confirm."
