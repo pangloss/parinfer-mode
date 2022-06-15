@@ -6,37 +6,36 @@
 
 ;;; Code:
 
-(defvar parinfer-strategies '((default)
-                              (instantly)
-                              (skip))
+(defvar parinfer-strategies nil
   "Parinfer invoke strategy.
 
 Use `parinfer-strategy-add' to mark functions as using a
 particular strategy. Use `parinfer-strategy-parse' to read
 values.
 
-Its elements is like below:
-
- (STRATEGY-NAME COMMAND COMMAND ...)
-
-Each COMMAND is a symbol or a regexp string used to match commands.
+This is a plist with values being the commands, and keys being
+the following:
 
  strategy name    Description
  --------------   -------------------------------------------
- default          Invoke parinfer (delay on large sexp)
- instantly        Invoke parinfer instantly
- skip             Do not invoke parinfer")
+ :default         readjust indent or paren (delay on large sexp)
+ :instantly       readjust indent or paren
+ :reindent        reindent regardless of mode
+ :skip            do not invoke parinfer
 
-(defun parinfer-strategy-parse (strategy-name)
-  "Parse strategy, which is named STRATEGY-NAME in `parinfer-strategies'.
+The values are either symbols or regexp strings that are used to
+match commands.")
 
-Its output is a plist that looks like
+(defun parinfer-strategy-parse (strategy)
+  "Return commands in `parinfer-strategies' matching STRATEGY.
+
+Return a plist like:
 
  (:commands cmd1 cmd2 cmd3
   :regexps regexp1 regexp2 regexp3)"
-  (let ((list (cdr (assq strategy-name parinfer-strategies))))
-    (list :commands (cl-remove-if-not #'symbolp list)
-          :regexps  (cl-remove-if-not #'stringp list))))
+  (let ((lst (plist-get parinfer-strategies strategy)))
+    (list :commands (cl-remove-if-not #'symbolp lst)
+          :regexps  (cl-remove-if-not #'stringp lst))))
 
 (defun parinfer-strategy-add (strategy &rest commands)
   "Append new commands to STRATEGY in `parinfer-strategy'.
@@ -44,22 +43,18 @@ Its output is a plist that looks like
 COMMANDS is a list of commands, which may be a symbol or a regexp
 string."
   (declare (indent 1))
-  (let* ((orig-value (cdr (assq strategy parinfer-strategies)))
-         (keys (mapcar #'car parinfer-strategies))
-         (new-value (cl-remove-duplicates
-                     (append orig-value commands)
-                     :test #'equal
-                     :from-end t))
-         output)
-    (dolist (x parinfer-strategies)
-      (if (eq (car x) strategy)
-          (push (cons strategy new-value) output)
-        (push x output)))
-    (when (not (memq strategy keys))
-      (push (cons strategy new-value) output))
-    (setq parinfer-strategies (reverse output))))
+  (dolist (cmd commands)
+    (cl-pushnew
+     cmd
+     (plist-get parinfer-strategies strategy)
+     :test #'equal)))
 
-(parinfer-strategy-add 'default
+(parinfer-strategy-add :reindent
+  'evil-shift-left
+  'evil-shift-left-line
+  'evil-shift-right
+  'evil-shift-right-line)
+(parinfer-strategy-add :default
   "paredit-"
   'comment-dwim
   'comment-line
@@ -70,12 +65,8 @@ string."
   'kill-region
   'kill-word
   'newline-and-indent
-  'evil-shift-left
-  'evil-shift-left-line
-  'evil-shift-right
-  'evil-shift-right-line
   'sp-insert-pair)
-(parinfer-strategy-add 'instantly
+(parinfer-strategy-add :instantly
   'indent-for-tab-command
   'parinfer-double-quote
   'outshine-self-insert-command
@@ -97,7 +88,7 @@ string."
   'evil-paste-after
   'evil-paste-before
   'evil-substitute)
-(parinfer-strategy-add 'skip
+(parinfer-strategy-add :skip
   'evil-previous-line
   'evil-forward-char
   'evil-backward-char

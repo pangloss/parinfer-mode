@@ -422,10 +422,6 @@ POS is the position we want to call parinfer."
      ((eq 'indent parinfer--mode) (parinfer-readjust-paren))
      (t "nothing"))))
 
-(defun parinfer--should-skip-this-command-p ()
-  "Should parinfer skip this command."
-  (parinfer-strategy-match-p this-command 'skip))
-
 (defun parinfer--should-clean-up-p ()
   "Should parinfer do clean job."
   (and (eq parinfer--mode 'indent)
@@ -474,13 +470,14 @@ This is the entry point function added to `post-command-hook'."
   (when (and this-command (symbolp this-command))
     (if (parinfer--should-clean-up-p)
         (parinfer--clean-up)
-      (unless (or (parinfer--should-skip-this-command-p)
+      (unless (or (parinfer-strategy-match-p this-command :skip)
                   (parinfer--in-comment-or-string-p)
                   (parinfer--unfinished-string-p))
         (cond
-         ((parinfer-strategy-match-p this-command 'instantly)
+         ((parinfer-strategy-match-p this-command :instantly)
           (parinfer--invoke-parinfer-instantly (point)))
-         ((parinfer-strategy-match-p this-command 'default)
+         ((parinfer-strategy-match-p this-command :reindent))
+         ((parinfer-strategy-match-p this-command :default)
           (parinfer--invoke-parinfer (point))
           (unless (parinfer--in-string-p)
             (setq parinfer--text-modified t))))))))

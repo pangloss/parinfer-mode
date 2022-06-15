@@ -303,12 +303,12 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
   :mount
   (require 'eldoc)
   (eldoc-add-command-completions "lispy-" "parinfer-")
-  (parinfer-strategy-add 'default
+  (parinfer-strategy-add :default
     #'parinfer-lispy:parens
     #'parinfer-lispy:braces
     #'parinfer-lispy:brackets
     #'parinfer-lispy:space)
-  (parinfer-strategy-add 'instantly
+  (parinfer-strategy-add :instantly
     #'newline)
   (parinfer-lispy:init))
 
