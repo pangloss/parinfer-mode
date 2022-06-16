@@ -100,19 +100,16 @@ Recommended configuration:
 
 `parinfer-mode` currently assumes space-based indentation and will break if tabs are being used.
 
-# Credits
-
-- [Shi Tianshu](https://github.com/DogLooksGood): Original creator of parinfer-mode
-
-## Original credits
-
-- [shaunlebron](https://github.com/shaunlebron): Create [Parinfer](https://shaunlebron.github.io/parinfer/).
-- [oakmac](https://github.com/oakmac): Bring Parinfer to Emacs with [parinfer-elisp](https://github.com/oakmac/parinfer-elisp).
-- [tumashu](https://github.com/tumashu): Help me a lot in writing this plugin.
-- [purcell](https://github.com/purcell) & [syohex](https://github.com/syohex): Advice and Tips for writing emacs plugin
-
 # License
 
 parinferlib.el from [parinfer-elisp](https://github.com/oakmac/parinfer-elisp), is licensed under the [ISC](https://github.com/oakmac/parinfer-elisp/blob/master/LICENSE.md).
 
-The rest is licensed under the GPLv3.
+```
+Copyright (c) 2016, Chris Oakman
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+```
+
+[parinfer-mode](https://github.com/DogLooksGood/parinfer-mode) by Shi Tianshu is licensed under GPLv3.
+
+This version is also licensed under GPLv3.
