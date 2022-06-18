@@ -290,6 +290,7 @@ Clean up delay if exists."
   (beginning-of-line))
 
 (defun parinfer--empty-line-p ()
+  "Whether this line is empty or contains only whitespace."
   (or (eq (line-beginning-position) (line-end-position))
       (string-match-p
        "^[[:blank:]]+$"
@@ -712,10 +713,12 @@ If there's any change, display a confirm message in minibuffer."
         t))))
 
 (defun parinfer-readjust-indent ()
-  "Do parinfer paren  on current & previous top level S-exp."
-  (when (and (ignore-errors (parinfer--reindent-sexp))
-             (parinfer--auto-switch-indent-mode-p))
-    (parinfer--switch-to-indent-mode)))
+  "Do parinfer paren on current and previous top level S-exp."
+  (let (result)
+    (setq result (ignore-errors (parinfer--reindent-sexp)))
+    (when (and result
+               (parinfer--auto-switch-indent-mode-p))
+      (parinfer--switch-to-indent-mode))))
 
 ;; -----------------------------------------------------------------------------
 ;; Parinfer commands
