@@ -2,7 +2,7 @@
 ;;
 ;; Author: Chris Oakman
 ;; Homepage: https://github.com/oakmac/parinfer-elisp
-;; Version: 1.0.0-kisaragi
+;; Version: 1.1.0
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: parinfer, extensions
 ;;
@@ -87,16 +87,11 @@ A Stack Element has four fields: CH, INDENT-DELTA, LINE-NO, and X."
   (member ch '(")" "}" "]")))
 
 ;;------------------------------------------------------------------------------
-;; Result Structure
+;; State
 ;;------------------------------------------------------------------------------
 
-(defmacro parinferlib--defvar-local (var val &optional doc)
-  "`defvar' VAR to VAL with DOC then make it buffer local.
-
-Polyfill for Emacs 24.1 / 24.2."
-  `(progn
-     (defvar ,var ,val ,doc)
-     (make-variable-buffer-local ',var)))
+;; State is always reset by the entry points calling process-text, so
+;; we don't need to use buffer local variables.
 (defvar parinferlib--mode nil)
 (defvar parinferlib--origText nil)
 (defvar parinferlib--origLines nil)
@@ -136,7 +131,7 @@ Polyfill for Emacs 24.1 / 24.2."
 (defvar parinferlib--cursorDx nil)
 (defvar parinferlib--previewCursorScope nil)
 
-(defun parinferlib--create-initial-result (text mode options)
+(defun parinferlib--initialize (text mode options)
   "Reset state according to TEXT, MODE, and OPTIONS."
   (let ((lines-vector (vconcat (split-string text parinferlib--LINE_ENDING_REGEX))))
     (setq parinferlib--mode mode
@@ -228,7 +223,7 @@ X: current position."
   (let* ((orig-length (length orig))
          (head (substring orig 0 start))
          (tail (if (>= end orig-length)
-                   ""
+                 ""
                  (substring orig end))))
     (concat head replace tail)))
 
@@ -458,7 +453,7 @@ CH is the character we're processing."
          (line (aref lines line-no))
          (x parinferlib--x)
          (prev-ch (if (> x 0)
-                      (string (aref line (1- x)))
+                    (string (aref line (1- x)))
                     nil))
          (ch parinferlib--ch)
          (should-reset? (and parinferlib--isInCode
@@ -542,7 +537,7 @@ CH is the character we're processing."
         (while (< i end-x)
           (let ((ch (string (aref line i))))
             (if (parinferlib--close-paren? ch)
-                (setq new-trail (concat new-trail ch))
+              (setq new-trail (concat new-trail ch))
               (setq space-count (1+ space-count))))
           (setq i (1+ i)))
         (when (> space-count 0)
@@ -770,7 +765,7 @@ CH is the character we're processing."
 
 (defun parinferlib--process-text (text mode options)
   "Process TEXT in MODE with OPTIONS."
-  (parinferlib--create-initial-result text mode options)
+  (parinferlib--initialize text mode options)
   (let* ((orig-lines parinferlib--origLines)
          (lines-length (length orig-lines))
          (i 0)
