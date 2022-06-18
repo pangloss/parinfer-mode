@@ -153,7 +153,7 @@ Use rainbow-delimiters for Paren Mode, and dim-style parens for Indent Mode."
 
 (defun parinfer-defaults:company-cancel (&ignored)
   "Invoke when company cancelled, ignore IGNORED."
-  (parinfer-readjust-paren))
+  (parinfer-readjust-paren t))
 
 (defun parinfer-defaults:company-finish (&ignored)
   "Invoke when company finished, ignore IGNORED. "

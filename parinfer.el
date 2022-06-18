@@ -384,7 +384,7 @@ POS is the position we want to call parinfer."
         (forward-char x))
     (cond
      ((eq 'paren parinfer--mode) (parinfer-readjust-indent))
-     ((eq 'indent parinfer--mode) (parinfer-readjust-paren-instantly))
+     ((eq 'indent parinfer--mode) (parinfer-readjust-paren))
      (t "nothing"))))
 
 (defun parinfer--invoke-parinfer (&optional pos)
@@ -403,7 +403,7 @@ POS is the position we want to call parinfer."
         (goto-char current-pos))
     (cond
      ((eq 'paren parinfer--mode) (parinfer-readjust-indent))
-     ((eq 'indent parinfer--mode) (parinfer-readjust-paren))
+     ((eq 'indent parinfer--mode) (parinfer-readjust-paren t))
      (t "nothing"))))
 
 (defun parinfer--should-clean-up-p ()
@@ -462,7 +462,7 @@ This is the entry point function added to `post-command-hook'."
           (parinfer--invoke-parinfer-instantly (point)))
          ((parinfer-strategy-match-p this-command :shift-right)
           (let ((parinfer--mode 'indent))
-            (parinfer-readjust-paren-instantly))
+            (parinfer-readjust-paren))
           (save-excursion
             (beginning-of-line)
             (parinfer-readjust-indent)))
@@ -525,7 +525,7 @@ This is the entry point function added to `post-command-hook'."
   (when (and (eq 'indent parinfer--mode)
              parinfer--region-shifted)
     (beginning-of-line)
-    (parinfer-readjust-paren-instantly)
+    (parinfer-readjust-paren)
     (when parinfer--x-after-shift
       (if (> parinfer--x-after-shift
              (- (line-end-position) (line-beginning-position)))
@@ -584,29 +584,6 @@ CONTEXT is the context for parinfer execution."
           (forward-char (plist-get result :cursor-x))))
       (setq parinfer--text-modified nil))))
 
-(defun parinfer--execute-instantly (context)
-  "Execute parinfer instantly with context CONTEXT."
-  (unless (parinfer--unsafe-p)
-    (let* ((text (plist-get context :text))
-           (opts (plist-get context :opts))
-           (result (parinferlib-indent-mode text opts)))
-      (parinfer--apply-result result context)
-      (run-hooks 'parinfer-after-execute-hook))))
-
-(defun parinfer--execute (context)
-  "Execute parinfer with context CONTEXT."
-  (when parinfer--delay-timer
-    (cancel-timer parinfer--delay-timer)
-    (setq parinfer--delay-timer nil))
-  (let ((text (plist-get context :text)))
-    (if (> (length text) parinfer-delay-invoke-threshold)
-        (setq parinfer--delay-timer
-              (run-with-idle-timer
-               parinfer-delay-invoke-idle
-               nil
-               #'parinfer-readjust-paren-instantly))
-      (parinfer--execute-instantly context))))
-
 (defun parinfer--auto-switch-indent-mode-p ()
   "Should we automatically switch to indent mode?"
   (and (parinfer--paren-balanced-p)
@@ -619,15 +596,30 @@ CONTEXT is the context for parinfer execution."
                                  (string l-c-e)))))
          (_ parinfer-auto-switch-indent-mode))))
 
-(defun parinfer-readjust-paren ()
-  "Parinfer indent."
-  (let ((context (parinfer--prepare)))
-    (parinfer--execute context)))
+(defun parinfer-readjust-paren (&optional delay)
+  "Parinfer indent mode.
 
-(defun parinfer-readjust-paren-instantly ()
-  "Parinfer indent instantly."
-  (let ((context (parinfer--prepare)))
-    (parinfer--execute-instantly context)))
+Readjust parens according to indentation.
+
+When DELAY is non-nil and the text to be modified is larger than
+`parinfer-delay-invoke-threshold', parens will only be modified
+after `parinfer-delay-invoke-idle' seconds of idle time."
+  (let* ((context (parinfer--prepare))
+         (text (plist-get context :text)))
+    (when (and delay parinfer--delay-timer)
+      (cancel-timer parinfer--delay-timer)
+      (setq parinfer--delay-timer nil))
+    (if (and delay (> (length text) parinfer-delay-invoke-threshold))
+        (setq parinfer--delay-timer
+              (run-with-idle-timer
+               parinfer-delay-invoke-idle
+               nil
+               #'parinfer-readjust-paren))
+      (unless (parinfer--unsafe-p)
+        (let* ((opts (plist-get context :opts))
+               (result (parinferlib-indent-mode text opts)))
+          (parinfer--apply-result result context)
+          (run-hooks 'parinfer-after-execute-hook))))))
 
 (defun parinfer-readjust-paren-buffer ()
   "Call parinfer indent on whole buffer."
@@ -844,7 +836,7 @@ This is the very special situation, since we always need
 invoke parinfer after every semicolon input."
   (interactive)
   (call-interactively 'self-insert-command)
-  (parinfer-readjust-paren)
+  (parinfer-readjust-paren t)
   (setq parinfer--text-modified t))
 
 (defun parinfer-double-quote ()
