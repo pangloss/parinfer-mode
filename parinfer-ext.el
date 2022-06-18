@@ -1,4 +1,4 @@
-;;; parinfer-ext.el --- Extensions of parinfer-mode
+;;; parinfer-ext.el --- Extensions of parinfer-mode  -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2016, Shi Tianshu
 
