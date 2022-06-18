@@ -228,10 +228,6 @@ Clean up delay if exists."
 
 ;;;; Extensions
 
-(defun parinfer-current-mode ()
-  "Return the current `parinfer--mode'."
-  parinfer--mode)
-
 (defun parinfer--switch-to-indent-mode-1 ()
   "Switch to indent mode auxiliary function."
   (setq parinfer--mode 'indent)
@@ -239,19 +235,6 @@ Clean up delay if exists."
   (run-hook-with-args 'parinfer-switch-mode-hook 'indent)
   (parinfer--extension-lifecycle :indent)
   (force-mode-line-update))
-
-(defun parinfer--switch-to-indent-mode ()
-  "Switch to Indent Mode, this will apply indent fix on whole buffer.
-If this is the first switching for current buffer and indent mode will change
-Buffer text, we should see a confirm message."
-  (if (or (not parinfer--first-load)
-          (string= (buffer-name) " *temp*"))
-      (progn
-        (parinfer-readjust-paren-buffer)
-        (parinfer--switch-to-indent-mode-1))
-    (when (parinfer-readjust-paren-with-confirm)
-      (setq parinfer--first-load nil)
-      (parinfer--switch-to-indent-mode-1))))
 
 (defun parinfer--init ()
   "Init Parinfer Mode, switch to Paren firstly, then Indent."
@@ -891,9 +874,15 @@ invoke parinfer after every semicolon input."
 (defun parinfer-toggle-mode ()
   "Switch parinfer mode between Indent Mode and Paren Mode."
   (interactive)
-  (if (eq 'paren parinfer--mode)
-      (parinfer--switch-to-indent-mode)
-    (parinfer--switch-to-paren-mode)))
+  (cond ((eq 'indent parinfer--mode)
+         (parinfer--switch-to-paren-mode))
+        ((or (not parinfer--first-load)
+             (string= (buffer-name) " *temp*"))
+         (parinfer-readjust-paren-buffer)
+         (parinfer--switch-to-indent-mode-1))
+        (t
+         (when (parinfer-readjust-paren-with-confirm)
+           (parinfer--switch-to-indent-mode-1)))))
 
 (defun parinfer-diff ()
   "Diff current code and the code after applying Indent Mode in Ediff.
