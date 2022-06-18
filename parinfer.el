@@ -536,54 +536,6 @@ This is the entry point function added to `post-command-hook'."
     (setq parinfer--x-after-shift nil))
   (parinfer-region-mode -1))
 
-(defun parinfer--prepare ()
-  "Prepare input arguments for parinferlib."
-  (let* ((window-start-pos (window-start))
-         (start (save-mark-and-excursion (parinfer--goto-previous-toplevel) (point)))
-         (end (save-mark-and-excursion (parinfer--goto-next-toplevel) (point)))
-         (text (buffer-substring-no-properties start end))
-         (line-number (line-number-at-pos))
-         (cursor-line (- line-number (line-number-at-pos start)))
-         (cursor-x (parinfer--cursor-x))
-         (opts (list :cursor-x cursor-x
-                     :cursor-line cursor-line
-                     :preview-cursor-scope parinfer-preview-cursor-scope))
-         (orig (list :start start
-                     :end end
-                     :window-start-pos window-start-pos
-                     :line-number line-number)))
-    (list :text text :opts opts :orig orig)))
-
-(defun parinfer--apply-result (result context)
-  "Apply parinfer RESULT to current buffer.
-CONTEXT is the context for parinfer execution."
-  (let* ((orig (plist-get context :orig))
-         (start (plist-get orig :start))
-         (line-number (plist-get orig :line-number))
-         (err (plist-get result :error)))
-    (if (and parinfer-display-error err)
-        (let ((err-line (+ (line-number-at-pos start)
-                           (plist-get err :line-no))))
-          (message "Parinfer error:%s at line: %s column:%s"
-                   (plist-get err :message)
-                   err-line
-                   (save-mark-and-excursion
-                     (parinfer--goto-line err-line)
-                     (forward-char (plist-get err :x))
-                     (current-column))))
-      (let ((changed-lines (plist-get result :changed-lines)))
-        (when (and (plist-get result :success)
-                   changed-lines)
-          (cl-loop for l in changed-lines do
-                   (parinfer--goto-line (+ (line-number-at-pos start) (plist-get l :line-no)))
-                   (save-mark-and-excursion
-                     (delete-region (line-beginning-position)
-                                    (line-end-position)))
-                   (insert (plist-get l :line)))
-          (parinfer--goto-line line-number)
-          (forward-char (plist-get result :cursor-x))))
-      (setq parinfer--text-modified nil))))
-
 (defun parinfer--auto-switch-indent-mode-p ()
   "Should we automatically switch to indent mode?"
   (and (parinfer--paren-balanced-p)
@@ -596,6 +548,18 @@ CONTEXT is the context for parinfer execution."
                                  (string l-c-e)))))
          (_ parinfer-auto-switch-indent-mode))))
 
+(cl-defun parinfer--apply-result (result &key (offset 1))
+  "Apply changes in RESULT.
+
+OFFSET specifies an offset between line numbers in the result and
+real line numbers."
+  (cl-loop for l in (plist-get result :changed-lines) do
+           (parinfer--goto-line (+ offset (plist-get l :line-no)))
+           (save-mark-and-excursion
+             (delete-region (line-beginning-position)
+                            (line-end-position)))
+           (insert (plist-get l :line))))
+
 (defun parinfer-readjust-paren (&optional delay)
   "Parinfer indent mode.
 
@@ -604,8 +568,14 @@ Readjust parens according to indentation.
 When DELAY is non-nil and the text to be modified is larger than
 `parinfer-delay-invoke-threshold', parens will only be modified
 after `parinfer-delay-invoke-idle' seconds of idle time."
-  (let* ((context (parinfer--prepare))
-         (text (plist-get context :text)))
+  (let* ((start (save-mark-and-excursion (parinfer--goto-previous-toplevel) (point)))
+         (end (save-mark-and-excursion (parinfer--goto-next-toplevel) (point)))
+         (text (buffer-substring-no-properties start end))
+         (line-number (line-number-at-pos))
+         (cursor-line (- line-number (line-number-at-pos start)))
+         result err)
+    ;; Don't touch the timer if we're not delayed.
+    ;; I don't know if this is necessary.
     (when (and delay parinfer--delay-timer)
       (cancel-timer parinfer--delay-timer)
       (setq parinfer--delay-timer nil))
@@ -616,10 +586,28 @@ after `parinfer-delay-invoke-idle' seconds of idle time."
                nil
                #'parinfer-readjust-paren))
       (unless (parinfer--unsafe-p)
-        (let* ((opts (plist-get context :opts))
-               (result (parinferlib-indent-mode text opts)))
-          (parinfer--apply-result result context)
-          (run-hooks 'parinfer-after-execute-hook))))))
+        (setq result (parinferlib-indent-mode
+                      text
+                      (list :cursor-x (parinfer--cursor-x)
+                            :cursor-line cursor-line
+                            :preview-cursor-scope parinfer-preview-cursor-scope))
+              err (plist-get result :error))
+        (if (and parinfer-display-error err)
+            (let ((err-line (+ (line-number-at-pos start)
+                               (plist-get err :line-no))))
+              (message "Parinfer error:%s at line: %s column:%s"
+                       (plist-get err :message)
+                       err-line
+                       (save-mark-and-excursion
+                         (parinfer--goto-line err-line)
+                         (forward-char (plist-get err :x))
+                         (current-column))))
+          (when (plist-get result :success)
+            (parinfer--apply-result result :offset (line-number-at-pos start))
+            (parinfer--goto-line line-number)
+            (forward-char (plist-get result :cursor-x)))
+          (setq parinfer--text-modified nil))
+        (run-hooks 'parinfer-after-execute-hook)))))
 
 (defun parinfer-readjust-paren-buffer ()
   "Call parinfer indent on whole buffer."
@@ -630,16 +618,9 @@ after `parinfer-delay-invoke-idle' seconds of idle time."
                      :cursor-line cursor-line
                      :preview-cursor-scope parinfer-preview-cursor-scope))
          (text (buffer-substring-no-properties (point-min) (point-max)))
-         (result (parinferlib-indent-mode text opts))
-         (changed-lines (plist-get result :changed-lines)))
-    (when (and (plist-get result :success)
-               changed-lines)
-      (cl-loop for l in changed-lines do
-               (parinfer--goto-line (1+ (plist-get l :line-no)))
-               (save-mark-and-excursion
-                 (delete-region (line-beginning-position)
-                                (line-end-position)))
-               (insert (plist-get l :line)))
+         (result (parinferlib-indent-mode text opts)))
+    (when (plist-get result :success)
+      (parinfer--apply-result result)
       (parinfer--goto-line (1+ cursor-line))
       (forward-char (plist-get result :cursor-x))
       (set-window-start (selected-window) window-start-pos))))
@@ -649,18 +630,16 @@ after `parinfer-delay-invoke-idle' seconds of idle time."
 
 Return `changed' if so, `unchanged' if not, or `(error <ERR>)' if
 parinferlib returned an error."
-  (let* ((cursor-line (1- (line-number-at-pos)))
-         (cursor-x (parinfer--cursor-x))
-         (opts (list :cursor-line cursor-line :cursor-x cursor-x))
-         (text (buffer-substring-no-properties (point-min) (point-max)))
-         (result (parinferlib-indent-mode text opts))
-         (success (plist-get result :success))
-         (err (plist-get result :error))
-         (changed-lines (plist-get result :changed-lines)))
-    (cond ((not success)
-           (list 'error err))
-          ((and changed-lines
-                (not (string= text (plist-get result :text))))
+  (let* ((input-text (buffer-substring-no-properties (point-min) (point-max)))
+         (result (parinferlib-indent-mode
+                  input-text
+                  (list :cursor-line (1- (line-number-at-pos))
+                        :cursor-x (parinfer--cursor-x)))))
+    (cond ((not (plist-get result :success))
+           (list 'error (plist-get result :error)))
+          ((and (plist-get result :changed-lines)
+                (not (string= input-text
+                              (plist-get result :text))))
            'changed)
           (t 'unchanged))))
 
@@ -670,42 +649,44 @@ parinferlib returned an error."
 If there's any change, display a confirm message in minibuffer."
   (interactive)
   (let* ((window-start-pos (window-start))
-         (cursor-line (1- (line-number-at-pos)))
-         (cursor-x (parinfer--cursor-x))
-         (opts (list :cursor-line cursor-line :cursor-x cursor-x))
+         (orig-cursor-line (line-number-at-pos))
          (text (buffer-substring-no-properties (point-min) (point-max)))
-         (result (parinferlib-indent-mode text opts))
-         (success (plist-get result :success))
+         (result (parinferlib-indent-mode
+                  text
+                  (list :cursor-line (1- orig-cursor-line)
+                        :cursor-x (parinfer--cursor-x))))
          (err (plist-get result :error))
          (error-message (plist-get err :message))
-         (error-line-no (plist-get err :line-no))
-         (changed-lines (plist-get result :changed-lines)))
-    (if (not success)
-        (progn
-          (message (concat "Parinfer: Error%s: \"%s\" - switch to Paren mode. "
-                           "When error fixed, you can switch to indent mode.")
-                   (if (null error-line-no)
-                       ""
-                     (format " on line %d" error-line-no))
-                   error-message)
-          nil)
-      (if (and changed-lines
-               (not (string= text (plist-get result :text))))
-          (if (y-or-n-p "Parinfer: Switch to indent will modify this buffer, continue? ")
-              (progn (cl-loop for l in changed-lines do
-                              (parinfer--goto-line (1+ (plist-get l :line-no)))
-                              (delete-region (line-beginning-position)
-                                             (line-end-position))
-                              (insert (plist-get l :line)))
-                     (parinfer--goto-line (1+ cursor-line))
-                     (forward-char (plist-get result :cursor-x))
-                     (set-window-start (selected-window) window-start-pos)
-                     t)
-            nil)
-        t))))
+         (error-line-no (plist-get err :line-no)))
+    (cond
+     ((not (plist-get result :success))
+      (prog1 nil
+        (message
+         (concat
+          (if error-line-no
+              (format "Parinfer: Error on line %d: \"%s\" - switch to paren mode."
+                      error-line-no
+                      error-message)
+            (format "Parinfer: Error: \"%s\" - switch to paren mode."
+                    error-message))
+          "When error fixed, you can switch to indent mode."))))
+     ((and (not (plist-get result :changed-lines))
+           (string= text (plist-get result :text)))
+      t)
+     ((y-or-n-p "Parinfer: Switch to indent will modify this buffer, continue? ")
+      (progn
+        (parinfer--apply-result result)
+        (parinfer--goto-line orig-cursor-line)
+        (forward-char (plist-get result :cursor-x))
+        (set-window-start (selected-window) window-start-pos)
+        t)))))
 
 (defun parinfer-readjust-indent ()
-  "Do parinfer paren on current and previous top level S-exp."
+  "Readjust indentation for paren mode.
+
+This relies on Emacs's own indentation facilities instead of
+Parinfer's algorithm in order to correctly indent according to
+major mode rules."
   (let (result)
     (setq result (ignore-errors (parinfer--reindent-sexp)))
     (when (and result
