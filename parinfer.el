@@ -228,20 +228,12 @@ Clean up delay if exists."
 
 ;;;; Extensions
 
-(defun parinfer--switch-to-indent-mode-1 ()
-  "Switch to indent mode auxiliary function."
-  (setq parinfer--mode 'indent)
-  (setq parinfer--first-load nil)
-  (run-hook-with-args 'parinfer-switch-mode-hook 'indent)
-  (parinfer--extension-lifecycle :indent)
-  (force-mode-line-update))
-
 (defun parinfer--init ()
   "Init Parinfer Mode, switch to Paren firstly, then Indent."
   (parinfer--switch-to-paren-mode)
   (pcase (parinfer--indent-changes)
     (`unchanged
-     (parinfer--switch-to-indent-mode-1))
+     (parinfer--switch-to-indent-mode))
     (`changed
      (message
       (substitute-command-keys
@@ -259,8 +251,16 @@ Clean up delay if exists."
 (defun parinfer--indent-and-switch-to-indent-mode ()
   "Switch to Indent mode and call Indent Mode immediately."
   (interactive)
-  (parinfer--switch-to-indent-mode-1)
+  (parinfer--switch-to-indent-mode)
   (parinfer--invoke-parinfer-when-necessary))
+
+(defun parinfer--switch-to-indent-mode ()
+  "Switch to indent mode."
+  (setq parinfer--mode 'indent)
+  (setq parinfer--first-load nil)
+  (run-hook-with-args 'parinfer-switch-mode-hook 'indent)
+  (parinfer--extension-lifecycle :indent)
+  (force-mode-line-update))
 
 (defun parinfer--switch-to-paren-mode ()
   "Switch to paren mode."
@@ -715,7 +715,7 @@ If there's any change, display a confirm message in minibuffer."
   "Do parinfer paren  on current & previous top level S-exp."
   (when (and (ignore-errors (parinfer--reindent-sexp))
              (parinfer--auto-switch-indent-mode-p))
-    (parinfer--switch-to-indent-mode-1)))
+    (parinfer--switch-to-indent-mode)))
 
 ;; -----------------------------------------------------------------------------
 ;; Parinfer commands
@@ -879,10 +879,10 @@ invoke parinfer after every semicolon input."
         ((or (not parinfer--first-load)
              (string= (buffer-name) " *temp*"))
          (parinfer-readjust-paren-buffer)
-         (parinfer--switch-to-indent-mode-1))
+         (parinfer--switch-to-indent-mode))
         (t
          (when (parinfer-readjust-paren-with-confirm)
-           (parinfer--switch-to-indent-mode-1)))))
+           (parinfer--switch-to-indent-mode)))))
 
 (defun parinfer-diff ()
   "Diff current code and the code after applying Indent Mode in Ediff.
