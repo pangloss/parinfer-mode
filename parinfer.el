@@ -560,6 +560,13 @@ real line numbers."
                             (line-end-position)))
            (insert (plist-get l :line))))
 
+(defun parinfer--readjust-paren-1 (text &optional options)
+  "Wrapper around `parinferlib-indent-mode' that deals with tabs correctly.
+
+TEXT and OPTIONS are passed to `parinferlib-indent-mode'."
+  (let ((parinferlib--DOUBLE_SPACE (make-string tab-width ?\s)))
+    (parinferlib-indent-mode text options)))
+
 (defun parinfer-readjust-paren (&optional delay)
   "Parinfer indent mode.
 
@@ -586,7 +593,7 @@ after `parinfer-delay-invoke-idle' seconds of idle time."
                nil
                #'parinfer-readjust-paren))
       (unless (parinfer--unsafe-p)
-        (setq result (parinferlib-indent-mode
+        (setq result (parinfer--readjust-paren-1
                       text
                       (list :cursor-x (parinfer--cursor-x)
                             :cursor-line cursor-line
@@ -618,7 +625,7 @@ after `parinfer-delay-invoke-idle' seconds of idle time."
                      :cursor-line cursor-line
                      :preview-cursor-scope parinfer-preview-cursor-scope))
          (text (buffer-substring-no-properties (point-min) (point-max)))
-         (result (parinferlib-indent-mode text opts)))
+         (result (parinfer--readjust-paren-1 text opts)))
     (when (plist-get result :success)
       (parinfer--apply-result result)
       (parinfer--goto-line (1+ cursor-line))
@@ -631,7 +638,7 @@ after `parinfer-delay-invoke-idle' seconds of idle time."
 Return `changed' if so, `unchanged' if not, or `(error <ERR>)' if
 parinferlib returned an error."
   (let* ((input-text (buffer-substring-no-properties (point-min) (point-max)))
-         (result (parinferlib-indent-mode
+         (result (parinfer--readjust-paren-1
                   input-text
                   (list :cursor-line (1- (line-number-at-pos))
                         :cursor-x (parinfer--cursor-x)))))
@@ -651,7 +658,7 @@ If there's any change, display a confirm message in minibuffer."
   (let* ((window-start-pos (window-start))
          (orig-cursor-line (line-number-at-pos))
          (text (buffer-substring-no-properties (point-min) (point-max)))
-         (result (parinferlib-indent-mode
+         (result (parinfer--readjust-paren-1
                   text
                   (list :cursor-line (1- orig-cursor-line)
                         :cursor-x (parinfer--cursor-x))))
@@ -868,7 +875,7 @@ Use this to browse and apply the changes."
          (new-buffer (generate-new-buffer "*Parinfer Result*"))
          (orig-buffer (current-buffer))
          (m major-mode)
-         (result (parinferlib-indent-mode orig-text nil)))
+         (result (parinfer--readjust-paren-1 orig-text nil)))
     (with-current-buffer new-buffer
       (erase-buffer)
       (insert (plist-get result :text))

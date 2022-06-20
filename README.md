@@ -10,6 +10,16 @@
 
 As I rely on this mode to do all my Lisp editing, I figured I might as well make some changes to my local copy.
 
+# Main differences
+
+- Load time for each .el file decreased by at least 50% as the paren readjustment algorithm was being run twice before
+- evil integration (triggering paren or indent readjustment after the right commands) now available out of the box
+- parinferlib 1.1.0 (upstreamed by me), which provides 50% better performance on parinferlib's test file
+  - This comes from lexical binding, and using global variables for global state instead of passing a hash table around
+- Tabs don't break buffers any more, instead they are just replaced with spaces
+- Dropped Emacs 24 support
+- Dropped experimental “One” mode
+
 # What Is Parinfer
 
 > ***Parinfer*** is a proof-of-concept editor mode for Lisp programming languages. It simplifies the way we write Lisp by auto-adjusting parens when indentation changes and vice versa. The hope is to make basic Lisp-editing easier for newcomers and experts alike, while still allowing existing plugins like Paredit to satisfy the need for more advanced operations.
@@ -96,9 +106,9 @@ Recommended configuration:
 | paredit       | Introduce some paredit commands from paredit-mode.                                                                   |
 | lispy         | Integration with Lispy.                                                                                              |
 
-# Current Issues
+# Caveats
 
-`parinfer-mode` currently assumes space-based indentation and will break if tabs are being used.
+`parinfer-mode` only works space-based indentation — tabs will always be replaced with spaces in indent mode.
 
 # License
 

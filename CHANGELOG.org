@@ -2,6 +2,7 @@
 
 * Unreleased
 
+- Fixed tabs breaking indent mode, now they are simply replaced with spaces
 - Fixed =parinfer--plist2alist= used before it is defined
 - Removed the half-complete One mode
 - Inserting double quote does what I mean (hopefully)
