@@ -29,6 +29,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'parinfer-strategies)
 
 (defvar parinfer-extensions
